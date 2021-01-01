@@ -1,16 +1,13 @@
 // To compile this file, type the following:
 //   g++ pathtracer.cpp -lpng -lX11 -lpthread -o output
 // To run, type the following:
-//   ./output hw3sphere.txt
+//   ./output files/test_ground_objects_indirect.txt
 
 #define cimg_use_png
 
-// #include <iostream>
 #include <sstream>
 #include <fstream>
 #include <string>
-// #include <vector>
-// #include <memory>
 
 #include "utilities.h"
 #include "objects.h"
@@ -247,23 +244,16 @@ Vec3 sample_hemisphere(float r1, float r2) {
 
 void create_orthonormal_system(Vec3 &n, Vec3 &rotX, Vec3 &rotY) {
     Vec3 closest_vec;
-    // float denominator;
     if (n.x > n.y) {
         closest_vec = Vec3(n.z, 0, -n.x); // x-z plane 
-        // denominator = sqrt(n.x*n.x + n.z*n.z);
     } else {
         closest_vec = Vec3(0, -n.z, n.y); // y-z plane
-        // denominator = sqrt(n.y*n.y + n.z*n.z);
     }
-    // rotX = numerator / denominator;
     rotX = closest_vec.norm();
     rotY = n.cross(rotX);
 }
 
 void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &hit, int depth) {
-// void trace(Ray &ray, Vec3 &color, int depth) {
-//     std::shared_ptr<SceneObj> obj;
-//     Intersection hit;
 
     if (depth >= bounces) {
         color = black;
@@ -272,14 +262,13 @@ void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &
 
     bool intersect = get_intersection(ray, obj, hit);
     if (!intersect) {
-        color = white;
+        color = gray;
         return;
     }
 
     int material = obj->material;
     Vec3 emission = obj->emission;
 
-    // Vec3 color = Vec3(0, 0, 0);
 
     if (material == 1) {
         Vec3 direct_lighting = Vec3(0, 0, 0);
@@ -339,11 +328,6 @@ void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &
         Vec3 point_color = (direct_lighting + indirect_lighting).multVbyV(brdf);
         color = emission + point_color;
     }
-
-    // color = Vec3(1, 0, 0);
-     
-    // return emission + draw_object->color;
-    // return color;
 }
 
 void render(int width, int height) {
@@ -354,7 +338,6 @@ void render(int width, int height) {
             Vec3 color;
             std::shared_ptr<SceneObj> draw_object;
             Intersection hit;
-            // trace(ray, color, 0);
             trace(ray, color, draw_object, hit, 0);
             pixel = pixel + color;
             if (hit.distance > 0) {

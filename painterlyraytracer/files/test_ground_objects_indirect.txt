@@ -4,11 +4,16 @@ gi
 
 spp 50
 
-sun 1 1 1
-
-sphere 0.6 0 -1.5 0.5 1
-color 0 1 0
-sphere -0.6 0 -1.5 0.5 1
 color 1 0 0
 sphere 0 -100.5 -1 100 1
+
+background
+
+color 1 1 1
+sphere 0.6 0 -1.5 0.5 1
+color 0 1 0 
+sphere -0.6 0 -1.5 0.5 1
+
+paint
+
 

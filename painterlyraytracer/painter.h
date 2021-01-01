@@ -139,8 +139,6 @@ public:
         }
         // std::shuffle(strokes.begin(), strokes.end(), std::random_device()); 
 
-        std::cout << "strokes size: " << strokes.size() << std::endl;
-        int m = 0;
         for (int i=0; i < strokes.size(); i++) {
             auto p0 = strokes.at(i).at(0);  // get first point in stroke
             Vec3 stroke_color = p0.color; 
