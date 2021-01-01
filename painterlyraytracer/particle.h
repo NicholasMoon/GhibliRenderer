@@ -12,7 +12,7 @@ public:
     PaintParticle(float x0, float y0, Vec3 &c, Vec3 &dir, Vec3 &n, float dep, int s, int e) {
         x = x0;
         y = y0;
-        c = color;
+        color = c;
         direction = dir;
         normal = n;
         depth = dep;
@@ -29,7 +29,7 @@ public:
     StrokeParticle(float x0, float y0, Vec3 &c, int s) {
         x = x0;
         y = y0;
-        c = color;
+        color = c;
         size = s;
     }
 };
