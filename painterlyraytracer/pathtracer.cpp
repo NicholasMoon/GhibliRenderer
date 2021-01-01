@@ -120,6 +120,14 @@ void spp(std::vector<std::string> &tokens) {
     samples_per_pixel = std::stoi(tokens.at(1));
 }
 
+void change_eye(std::vector<std::string> &tokens) {
+    float x = std::stof(tokens.at(1));
+    float y = std::stof(tokens.at(2));
+    float z = std::stof(tokens.at(3));
+
+    eye = Vec3(x, y, z);
+}
+
 void add_to_background(std::vector<std::string> &tokens) {
     background = true;
 }
@@ -164,6 +172,8 @@ int process_tokens(std::vector<std::string> &tokens) {
         gi(tokens);
     } else if (keyword == "spp") {
         spp(tokens);
+    } else if (keyword == "eye") {
+        change_eye(tokens);
     } else if (keyword == "background") {
         add_to_background(tokens);
     } else if (keyword == "foreground") {
@@ -236,23 +246,24 @@ Vec3 sample_hemisphere(float r1, float r2) {
 }
 
 void create_orthonormal_system(Vec3 &n, Vec3 &rotX, Vec3 &rotY) {
-    Vec3 numerator;
-    float denominator;
+    Vec3 closest_vec;
+    // float denominator;
     if (n.x > n.y) {
-        numerator = Vec3(n.z, 0, -n.x);
-        denominator = sqrt(n.x*n.x + n.z*n.z);
+        closest_vec = Vec3(n.z, 0, -n.x); // x-z plane 
+        // denominator = sqrt(n.x*n.x + n.z*n.z);
     } else {
-        numerator = Vec3(0, -n.z, n.y);
-        denominator = sqrt(n.y*n.y + n.z*n.z);
+        closest_vec = Vec3(0, -n.z, n.y); // y-z plane
+        // denominator = sqrt(n.y*n.y + n.z*n.z);
     }
-    rotX = numerator / denominator;
+    // rotX = numerator / denominator;
+    rotX = closest_vec.norm();
     rotY = n.cross(rotX);
 }
 
 void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &hit, int depth) {
-    // std::shared_ptr<SceneObj> draw_object;
-    // Intersection hit;
-    
+// void trace(Ray &ray, Vec3 &color, int depth) {
+//     std::shared_ptr<SceneObj> obj;
+//     Intersection hit;
 
     if (depth >= bounces) {
         color = black;
@@ -261,7 +272,7 @@ void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &
 
     bool intersect = get_intersection(ray, obj, hit);
     if (!intersect) {
-        color = gray;
+        color = white;
         return;
     }
 
@@ -297,11 +308,12 @@ void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &
             create_orthonormal_system(hit.normal, rotX, rotY);
             float pdf = 1 / (2 * M_PI);
 
-            // Trace indirect rays and accumulate results
+            // Trace indirect rays and accumulate results (Monte Carlo integration)
             for (int i=0; i < samples_per_pixel; i++) {
                 float r1 = random_number();
                 float r2 = random_number();
                 Vec3 random_direction = sample_hemisphere(r1, r2);
+                // Transform sample to local coordinate system
                 float sample_x = Vec3(rotY.x, hit.normal.x, rotX.x).dot(random_direction);
                 float sample_y = Vec3(rotY.y, hit.normal.y, rotX.y).dot(random_direction);
                 float sample_z = Vec3(rotY.z, hit.normal.z, rotX.z).dot(random_direction);
@@ -310,20 +322,25 @@ void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &
 
                 float cos_theta = sample_direction.dot(hit.normal);
                 Vec3 trace_color;
+                std::shared_ptr<SceneObj> trace_obj;
+                Intersection trace_hit;
                 // trace(diffuse_ray, trace_color, depth+1);
-                trace(diffuse_ray, trace_color, obj, hit, depth+1);
+                trace(diffuse_ray, trace_color, trace_obj, trace_hit, depth+1);
                 trace_color = trace_color * cos_theta;
                 indirect_lighting = indirect_lighting + trace_color;
             }
 
-            // Average by number of samples and divide by pdf of random variable
+            // Average by number of samples and divide by pdf of random variable (same for all rays)
             indirect_lighting = indirect_lighting / (samples_per_pixel * pdf);
         } 
 
+        // Apply the rendering equation 
         Vec3 brdf = obj->color/M_PI; 
         Vec3 point_color = (direct_lighting + indirect_lighting).multVbyV(brdf);
         color = emission + point_color;
     }
+
+    // color = Vec3(1, 0, 0);
      
     // return emission + draw_object->color;
     // return color;
@@ -343,11 +360,13 @@ void render(int width, int height) {
             if (hit.distance > 0) {
                 if (draw_object->type == 1) {
                     write_color(img, x, y, color);
-                } else {
+                } else if (draw_object->type == 2) {
                     auto paint_particle = std::make_shared<PaintParticle>(x, y, color, ray.direction, hit.normal, hit.distance, 1, 1); // none are edges for now
                     particles.push_back(paint_particle);
                 }   
-            }    
+            } else {
+                write_color(img, x, y, color);   
+            }
         }
     }
 }
@@ -377,7 +396,7 @@ int main(int argc, char** argv) {
 
     // Go to painterly pipeline
     if (paint) {
-        auto painter = Painter(Pointillist(), particles, img);
+        auto painter = Painter(Pointillist(), particles, &img);
         painter.paint();
     }
 
