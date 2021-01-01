@@ -13,10 +13,10 @@ public:
 class Pointillist : public Style {
 public:
     Pointillist() {
-        brush_size = 2;
+        brush_size = 5;
         curvature_filter = 1;
         min_stroke_length = 1;
-        max_stroke_length = 2;
+        max_stroke_length = 1;
     }
 };
 

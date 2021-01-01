@@ -14,12 +14,26 @@ class Painter {
 public:
     Style style;
     std::vector<std::shared_ptr<PaintParticle>> particles;
-    CImg<float> img;
-    std::vector<std::vector<int>> brush; // fix this later
-    Painter(Style s, std::vector<std::shared_ptr<PaintParticle>> p, CImg<float> i) {
+    CImg<float> *img;
+    int mask_size;
+    int **brush;
+    Painter(Style s, std::vector<std::shared_ptr<PaintParticle>> p, CImg<float> *i) {
         style = s;
         particles = p;
         img = i;
+        mask_size = (style.brush_size * 2) + 1;
+
+        brush = new int*[mask_size];
+        for (int i=0; i < mask_size; i++) {
+            brush[i] = new int[mask_size];
+        }
+    }
+
+    ~Painter() {
+        for (int i=0; i < mask_size; i++) {
+            delete [] brush[i];
+        }
+        delete [] brush;
     }
 
     int get_mask_value(std::tuple<int, int> offset, int radius) {
@@ -32,18 +46,16 @@ public:
     }
 
     void create_mask(const int radius) {
-        brush.resize(radius, std::vector<int>(radius));
+        // brush.resize(radius, std::vector<int>(radius));
         for (int i=-radius; i < radius+1; i++) {
             for (int j=-radius; j < radius+1; j++) {
                 auto offset = std::make_tuple (i, j);
                 int mask_val = get_mask_value(offset, radius);
-                std::cout << brush.at(i).size() << std::endl;
-                std::cout << i+radius << " " << j+radius << std::endl;
-                brush.at(i+radius).at(j+radius) = mask_val; // fix this 
-                std::cout << "after" << std::endl;
+                // printf("(%d, %d): %d \n", i, j, mask_val);
+                // brush.at(i+radius).at(j+radius) = mask_val; // fix this 
+                brush[i+radius][j+radius] = mask_val;
             }
         }
-        
     }
 
     std::vector<StrokeParticle> makeSplineStroke(std::shared_ptr<PaintParticle> &particle, int min_x, int max_x, int min_y, int max_y) {
@@ -65,7 +77,7 @@ public:
         float lastDx = 0;
         float lastDy = 0;
 
-        for (int i=0; i < style.max_stroke_length; i++) {
+        for (int i=1; i < style.max_stroke_length; i++) {
             // Find tangent stroke
             float dot_nd = particle->normal.dot(particle->direction);
             float mag_d = particle->direction.mag() * particle->direction.mag();
@@ -111,9 +123,9 @@ public:
         int min_x, max_x, min_y, max_y;
         if (edge_particles.size() == 0) {
             min_x = 0;
-            max_x = img.width();
+            max_x = img->width();
             min_y = 0;
-            max_y = img.height();
+            max_y = img->height();
         } else {
             // TODO: find best translation for this part
             std::cout << "still implementing" << std::endl;
@@ -125,8 +137,10 @@ public:
             auto s = makeSplineStroke(particles.at(i), min_x, max_x, min_y, max_y);
             strokes.push_back(s);
         }
-        std::shuffle(strokes.begin(), strokes.end(), std::random_device()); 
+        // std::shuffle(strokes.begin(), strokes.end(), std::random_device()); 
 
+        std::cout << "strokes size: " << strokes.size() << std::endl;
+        int m = 0;
         for (int i=0; i < strokes.size(); i++) {
             auto p0 = strokes.at(i).at(0);  // get first point in stroke
             Vec3 stroke_color = p0.color; 
@@ -135,14 +149,14 @@ public:
             int y = p0.y;
             // Paint surrounding pixels (maybe make function for this)
             for (int j=-radius; j < radius+1; j++) {
-                for (int k=-radius; k < radius+1; j++) {
-                    int curr_x = x + i;
-                    int curr_y = y + j;
-                    if (curr_x < 0 || curr_x >= img.width()) continue;
-                    if (curr_y < 0 || curr_y >= img.width()) continue;
-                    int paint_num = brush.at(i+radius).at(j+radius);
+                for (int k=-radius; k < radius+1; k++) {
+                    int curr_x = x + j;
+                    int curr_y = y + k;
+                    if (curr_x < 0 || curr_x >= img->width()) continue;
+                    if (curr_y < 0 || curr_y >= img->height()) continue;
+                    int paint_num = brush[j+radius][k+radius];
                     if (paint_num) {
-                        write_color(img, curr_x, curr_y, stroke_color);
+                        write_color(*img, curr_x, curr_y, stroke_color);
                     }
                 }
             }
