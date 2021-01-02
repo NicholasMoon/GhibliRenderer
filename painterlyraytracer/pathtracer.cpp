@@ -35,7 +35,7 @@ Vec3 gray = Vec3(0.5, 0.5, 0.5);
 Vec3 white = Vec3(1, 1, 1);
 float gamma_val = 1.0;
 bool global_illumination = false;
-int samples_per_pixel = 1;
+int secondary_rays = 1;
 int bounces = 2;
 
 // PAINTING
@@ -114,7 +114,7 @@ void gi(std::vector<std::string> &tokens) {
 }
 
 void spp(std::vector<std::string> &tokens) {
-    samples_per_pixel = std::stoi(tokens.at(1));
+    secondary_rays = std::stoi(tokens.at(1));
 }
 
 void change_eye(std::vector<std::string> &tokens) {
@@ -298,7 +298,7 @@ void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &
             float pdf = 1 / (2 * M_PI);
 
             // Trace indirect rays and accumulate results (Monte Carlo integration)
-            for (int i=0; i < samples_per_pixel; i++) {
+            for (int i=0; i < secondary_rays; i++) {
                 float r1 = random_number();
                 float r2 = random_number();
                 Vec3 random_direction = sample_hemisphere(r1, r2);
@@ -320,7 +320,7 @@ void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &
             }
 
             // Average by number of samples and divide by pdf of random variable (same for all rays)
-            indirect_lighting = indirect_lighting / (samples_per_pixel * pdf);
+            indirect_lighting = indirect_lighting / (secondary_rays * pdf);
         } 
 
         // Apply the rendering equation 
@@ -379,7 +379,7 @@ int main(int argc, char** argv) {
 
     // Go to painterly pipeline
     if (paint) {
-        auto painter = Painter(Pointillist(), particles, &img);
+        auto painter = Painter(Expressionist(), particles, &img);
         painter.paint();
     }
 

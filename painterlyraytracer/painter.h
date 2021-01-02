@@ -137,24 +137,26 @@ public:
             auto s = makeSplineStroke(particles.at(i), min_x, max_x, min_y, max_y);
             strokes.push_back(s);
         }
-        // std::shuffle(strokes.begin(), strokes.end(), std::random_device()); 
+        std::shuffle(strokes.begin(), strokes.end(), std::random_device()); 
 
         for (int i=0; i < strokes.size(); i++) {
-            auto p0 = strokes.at(i).at(0);  // get first point in stroke
-            Vec3 stroke_color = p0.color; 
+            for (int m=0; m < strokes.at(i).size(); m++) {
+                auto p0 = strokes.at(i).at(m);  // get current point in stroke
+                Vec3 stroke_color = p0.color; 
 
-            int x = p0.x;
-            int y = p0.y;
-            // Paint surrounding pixels (maybe make function for this)
-            for (int j=-radius; j < radius+1; j++) {
-                for (int k=-radius; k < radius+1; k++) {
-                    int curr_x = x + j;
-                    int curr_y = y + k;
-                    if (curr_x < 0 || curr_x >= img->width()) continue;
-                    if (curr_y < 0 || curr_y >= img->height()) continue;
-                    int paint_num = brush[j+radius][k+radius];
-                    if (paint_num) {
-                        write_color(*img, curr_x, curr_y, stroke_color);
+                int x = p0.x;
+                int y = p0.y;
+                // Paint surrounding pixels (maybe make function for this)
+                for (int j=-radius; j < radius+1; j++) {
+                    for (int k=-radius; k < radius+1; k++) {
+                        int curr_x = x + j;
+                        int curr_y = y + k;
+                        if (curr_x < 0 || curr_x >= img->width()) continue;
+                        if (curr_y < 0 || curr_y >= img->height()) continue;
+                        int paint_num = brush[j+radius][k+radius];
+                        if (paint_num) {
+                            write_color(*img, curr_x, curr_y, stroke_color);
+                        }
                     }
                 }
             }
