@@ -324,7 +324,7 @@ void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &
         } 
 
         // Apply the rendering equation 
-        Vec3 brdf = obj->color/M_PI; 
+        Vec3 brdf = obj->color; 
         Vec3 point_color = (direct_lighting + indirect_lighting).multVbyV(brdf);
         color = emission + point_color;
     }

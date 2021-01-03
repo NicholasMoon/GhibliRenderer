@@ -23,10 +23,10 @@ public:
 class Expressionist : public Style {
 public:
     Expressionist() {
-        brush_size = 2;
-        curvature_filter = 1;
+        brush_size = 6;
+        curvature_filter = 1.5;
         min_stroke_length = 1;
-        max_stroke_length = 4;
+        max_stroke_length = 16;
     }
 };
 

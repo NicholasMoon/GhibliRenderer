@@ -79,29 +79,40 @@ public:
 
         for (int i=1; i < style.max_stroke_length; i++) {
             // Find tangent stroke
-            float dot_nd = particle->normal.dot(particle->direction);
-            float mag_d = particle->direction.mag() * particle->direction.mag();
-            Vec3 o_prime = particle->direction * (dot_nd/mag_d);
+            // Vec3 up = Vec3(1, 0, 0);
+            // float dot_nd = particle->normal.dot(up);
+            // float mag_d = up.mag() * up.mag();
+            // Vec3 o_prime = up * (dot_nd/mag_d);
+
+            // float dot_nd = particle->normal.dot(particle->direction);
+            // float mag_d = particle->direction.mag() * particle->direction.mag();
+            // Vec3 o_prime = particle->direction * (dot_nd/mag_d);
+
+            // Vec3 o_prime = particle->normal.cross(particle->direction); // orientation for edge particles
+            Vec3 o_prime = particle->normal; 
 
             // Get unit vector of gradient
             float gx = o_prime.x;
             float gy = o_prime.y;
-            if (gx == 0 && gy == 0) continue;
+            // std::cout << "gx: " << gx << " gy: " << gy << std::endl;
+            // if (gx == 0 && gy == 0) continue;
             float dx = -gy;
-            float dy = gx;
+            float dy = -gx;
 
             if ((lastDx * dx + lastDy * dy) < 0) {
                 dx, dy = -dx, -dy;
             }
-
+            // std::cout << "dx: " << dx << " dy: " << dy << std::endl;
             dx = style.curvature_filter * dx + (1 - style.curvature_filter) * lastDx;
             dy = style.curvature_filter * dy + (1 - style.curvature_filter) * lastDy;
             dx = dx / sqrt(dx * dx + dy * dy);
             dy = dy / sqrt(dx * dx + dy * dy);
 
             // Filter stroke direction
-            x = std::round(x + size * dx);
-            y = std::round(y + size * dy);
+            x = x + size * dx;
+            y = y + size * dy;
+            lastDx = dx;
+            lastDy = dy;
 
             if (x < min_x || x >= max_x) continue;
             if (y < min_y || y >= max_y) continue;
@@ -137,7 +148,7 @@ public:
             auto s = makeSplineStroke(particles.at(i), min_x, max_x, min_y, max_y);
             strokes.push_back(s);
         }
-        std::shuffle(strokes.begin(), strokes.end(), std::random_device()); 
+        // std::shuffle(strokes.begin(), strokes.end(), std::random_device()); 
 
         for (int i=0; i < strokes.size(); i++) {
             for (int m=0; m < strokes.at(i).size(); m++) {

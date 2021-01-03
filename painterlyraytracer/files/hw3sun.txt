@@ -1,6 +1,9 @@
-png 100 80 hw3sun.png
-
-sphere 1 -0.8 -1 0.5
-sphere 0 0 -1 0.3
+png 400 400 hw3sun.png
 
 sun 1 1 1
+
+background
+sphere 0 0 -1 0.3
+sphere 1 -0.8 -1 0.5
+
+paint
