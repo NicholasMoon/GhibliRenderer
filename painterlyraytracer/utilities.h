@@ -31,11 +31,11 @@ float clamp(float color, float min, float max) {
     return c;
 }
 
-void write_color(CImg<float> &img, int x, int y, Vec3 color) {
+void write_color(CImg<float> &img, int x, int y, Vec3 color, int alpha) {
     img(x, y, 0, 0) = clamp(color.x, 0, 1) * 255;
     img(x, y, 0, 1) = clamp(color.y, 0, 1) * 255;
     img(x, y, 0, 2) = clamp(color.z, 0, 1) * 255;
-    img(x, y, 0, 3) = 255;
+    img(x, y, 0, 3) = alpha;
 }
 
 #endif

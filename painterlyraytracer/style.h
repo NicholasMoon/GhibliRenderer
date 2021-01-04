@@ -6,7 +6,7 @@
 class Style {
 public:
     int brush_size; // change to array when you want multiple sizes
-    int curvature_filter;
+    float curvature_filter;
     int min_stroke_length, max_stroke_length;
 };
 
@@ -23,10 +23,10 @@ public:
 class Expressionist : public Style {
 public:
     Expressionist() {
-        brush_size = 6;
-        curvature_filter = 1.5;
+        brush_size = 2;
+        curvature_filter = 0.25;
         min_stroke_length = 1;
-        max_stroke_length = 16;
+        max_stroke_length = 20;
     }
 };
 

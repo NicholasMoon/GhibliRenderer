@@ -1,11 +1,7 @@
 #ifndef PAINTER_H
 #define PAINTER_H
 
-// #include <iostream>
 #include <algorithm>
-// #include <vector>
-// #include <memory>
-// #include <random>
 #include "utilities.h"
 #include "style.h"
 #include "particle.h"
@@ -98,15 +94,21 @@ public:
             // if (gx == 0 && gy == 0) continue;
             float dx = -gy;
             float dy = -gx;
+            // float dx = -1;
+            // float dy = 1;
 
             if ((lastDx * dx + lastDy * dy) < 0) {
                 dx, dy = -dx, -dy;
             }
-            // std::cout << "dx: " << dx << " dy: " << dy << std::endl;
+            // std::cout << "bef dx: " << dx << " dy: " << dy << std::endl;
             dx = style.curvature_filter * dx + (1 - style.curvature_filter) * lastDx;
             dy = style.curvature_filter * dy + (1 - style.curvature_filter) * lastDy;
+            // std::cout << "bet dx: " << dx << " dy: " << dy << std::endl;
             dx = dx / sqrt(dx * dx + dy * dy);
             dy = dy / sqrt(dx * dx + dy * dy);
+            // std::cout << "after dx: " << dx << " dy: " << dy << std::endl;
+
+            // float yDistort = Vec3(dx, dy, 0).mag() * style.curvature_filter * (x - 0.5) * (x - 0.5);
 
             // Filter stroke direction
             x = x + size * dx;
@@ -166,7 +168,7 @@ public:
                         if (curr_y < 0 || curr_y >= img->height()) continue;
                         int paint_num = brush[j+radius][k+radius];
                         if (paint_num) {
-                            write_color(*img, curr_x, curr_y, stroke_color);
+                            write_color(*img, curr_x, curr_y, stroke_color, 255);
                         }
                     }
                 }

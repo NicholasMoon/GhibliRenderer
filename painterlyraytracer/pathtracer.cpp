@@ -342,13 +342,13 @@ void render(int width, int height) {
             pixel = pixel + color;
             if (hit.distance > 0) {
                 if (draw_object->type == 1) {
-                    write_color(img, x, y, color);
+                    write_color(img, x, y, color, 255);
                 } else if (draw_object->type == 2) {
                     auto paint_particle = std::make_shared<PaintParticle>(x, y, color, ray.direction, hit.normal, hit.distance, 1, 1); // none are edges for now
                     particles.push_back(paint_particle);
                 }   
             } else {
-                write_color(img, x, y, color);   
+                write_color(img, x, y, color, 255);   
             }
         }
     }
