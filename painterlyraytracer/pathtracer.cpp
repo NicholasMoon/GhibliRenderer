@@ -184,19 +184,19 @@
 
 // RAYTRACING
 
-Ray get_ray(int x, int y) {
-    Ray ray;
+// Ray get_ray(int x, int y) {
+//     Ray ray;
 
-    float denominator = std::max(width, height);
-    float sx = (2 * x - width) / denominator;
-    float sy = (height - 2 * y) / denominator;
+//     float denominator = std::max(width, height);
+//     float sx = (2 * x - width) / denominator;
+//     float sy = (height - 2 * y) / denominator;
 
-    Vec3 sr_su = (right * sx) + (up * sy);
-    ray.direction = (forward + sr_su).norm();
-    ray.origin = eye;
+//     Vec3 sr_su = (right * sx) + (up * sy);
+//     ray.direction = (forward + sr_su).norm();
+//     ray.origin = eye;
 
-    return ray;
-}
+//     return ray;
+// }
 
 bool get_intersection(Ray &ray, std::shared_ptr<SceneObj> &draw_object, Intersection &hit) {
     float min_distance = std::numeric_limits<float>::max(); 
@@ -253,16 +253,93 @@ void create_orthonormal_system(Vec3 &n, Vec3 &rotX, Vec3 &rotY) {
     rotY = n.cross(rotX);
 }
 
-void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &hit, int depth) {
+// void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &hit, int depth) {
 
-    if (depth >= bounces) {
-        color = black;
+//     if (depth >= bounces) {
+//         color = black;
+//         return;
+//     }
+
+//     bool intersect = get_intersection(ray, obj, hit);
+//     if (!intersect) {
+//         color = gray;
+//         return;
+//     }
+
+//     int material = obj->material;
+//     Vec3 emission = obj->emission;
+
+
+//     if (material == 1) {
+//         Vec3 direct_lighting = Vec3(0, 0, 0);
+
+//         for (unsigned long int i=0; i < scene_lights.size(); i++) {
+//             auto light = scene_lights.at(i);
+//             Vec3 light_direction = light->direction(hit);
+//             double intensity = light->intensity(hit);
+
+//             // Shadow test
+//             Ray shadow_ray = Ray(hit.point, light_direction);
+//             int visibility = calc_shadows(shadow_ray, light, hit);
+
+//             // Lambert's law
+//             double cos_theta = light_direction.dot(hit.normal);
+//             if (cos_theta < 0) continue;
+
+//             Vec3 direct_color = light->color * (visibility * cos_theta * intensity);
+//             direct_lighting = direct_lighting + direct_color;
+//         }
+
+//         Vec3 indirect_lighting = Vec3(0, 0, 0);
+        
+//         if (global_illumination) {
+//             Vec3 rotX, rotY;
+//             create_orthonormal_system(hit.normal, rotX, rotY);
+//             float pdf = 1 / (2 * M_PI);
+
+//             // Trace indirect rays and accumulate results (Monte Carlo integration)
+//             for (int i=0; i < secondary_rays; i++) {
+//                 float r1 = random_number();
+//                 float r2 = random_number();
+//                 Vec3 random_direction = sample_hemisphere(r1, r2);
+//                 // Transform sample to local coordinate system
+//                 float sample_x = Vec3(rotY.x, hit.normal.x, rotX.x).dot(random_direction);
+//                 float sample_y = Vec3(rotY.y, hit.normal.y, rotX.y).dot(random_direction);
+//                 float sample_z = Vec3(rotY.z, hit.normal.z, rotX.z).dot(random_direction);
+//                 Vec3 sample_direction = Vec3(sample_x, sample_y, sample_z);
+//                 Ray diffuse_ray = Ray(hit.point, sample_direction);
+
+//                 float cos_theta = sample_direction.dot(hit.normal);
+//                 Vec3 trace_color;
+//                 std::shared_ptr<SceneObj> trace_obj;
+//                 Intersection trace_hit;
+//                 // trace(diffuse_ray, trace_color, depth+1);
+//                 trace(diffuse_ray, trace_color, trace_obj, trace_hit, depth+1);
+//                 trace_color = trace_color * cos_theta;
+//                 indirect_lighting = indirect_lighting + trace_color;
+//             }
+
+//             // Average by number of samples and divide by pdf of random variable (same for all rays)
+//             indirect_lighting = indirect_lighting / (secondary_rays * pdf);
+//         } 
+
+//         // Apply the rendering equation 
+//         Vec3 brdf = obj->color; 
+//         Vec3 point_color = (direct_lighting + indirect_lighting).multVbyV(brdf);
+//         color = emission + point_color;
+//     }
+// }
+
+void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &hit, Scene &scene, int depth) {
+
+    if (depth >= scene.bounces) {
+        color = scene.black;
         return;
     }
 
     bool intersect = get_intersection(ray, obj, hit);
     if (!intersect) {
-        color = gray;
+        color = scene.gray;
         return;
     }
 
@@ -273,8 +350,8 @@ void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &
     if (material == 1) {
         Vec3 direct_lighting = Vec3(0, 0, 0);
 
-        for (unsigned long int i=0; i < scene_lights.size(); i++) {
-            auto light = scene_lights.at(i);
+        for (unsigned long int i=0; i < scene.scene_lights.size(); i++) {
+            auto light = scene.scene_lights.at(i);
             Vec3 light_direction = light->direction(hit);
             double intensity = light->intensity(hit);
 
@@ -292,13 +369,13 @@ void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &
 
         Vec3 indirect_lighting = Vec3(0, 0, 0);
         
-        if (global_illumination) {
+        if (scene.global_illumination) {
             Vec3 rotX, rotY;
             create_orthonormal_system(hit.normal, rotX, rotY);
             float pdf = 1 / (2 * M_PI);
 
             // Trace indirect rays and accumulate results (Monte Carlo integration)
-            for (int i=0; i < secondary_rays; i++) {
+            for (int i=0; i < scene.secondary_rays; i++) {
                 float r1 = random_number();
                 float r2 = random_number();
                 Vec3 random_direction = sample_hemisphere(r1, r2);
@@ -320,7 +397,7 @@ void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &
             }
 
             // Average by number of samples and divide by pdf of random variable (same for all rays)
-            indirect_lighting = indirect_lighting / (secondary_rays * pdf);
+            indirect_lighting = indirect_lighting / (scene.secondary_rays * pdf);
         } 
 
         // Apply the rendering equation 
