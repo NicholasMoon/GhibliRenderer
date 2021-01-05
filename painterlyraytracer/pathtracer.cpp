@@ -10,6 +10,7 @@
 #include <string>
 
 #include "utilities.h"
+#include "scene.h"
 #include "objects.h"
 #include "lights.h"
 #include "painter.h"
