@@ -1,4 +1,4 @@
-#set up how compilation will happen
+# set up how compilation will happen
 CC = g++
 CFLAGS = -Wall -g
 LDFLAGS =

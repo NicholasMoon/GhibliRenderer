@@ -185,13 +185,12 @@ int process_tokens(std::vector<std::string> &tokens) {
 
 Ray get_ray(int x, int y) {
     Ray ray;
-    Vec3 sx_right, sy_up, sr_su, direction;
 
     float denominator = std::max(width, height);
     float sx = (2 * x - width) / denominator;
     float sy = (height - 2 * y) / denominator;
 
-    sr_su = (right * sx) + (up * sy);
+    Vec3 sr_su = (right * sx) + (up * sy);
     ray.direction = (forward + sr_su).norm();
     ray.origin = eye;
 

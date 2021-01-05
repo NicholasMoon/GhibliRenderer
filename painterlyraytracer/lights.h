@@ -38,8 +38,7 @@ public:
     }
 
     double distance(const Intersection &intersection) const override {
-        double d = (position - intersection.point).mag();
-        return d;
+        return (position - intersection.point).mag();
     }
 
     double intensity(const Intersection &intersection) const override {
