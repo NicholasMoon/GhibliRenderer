@@ -198,19 +198,19 @@
 //     return ray;
 // }
 
-bool get_intersection(Ray &ray, std::shared_ptr<SceneObj> &draw_object, Intersection &hit) {
+bool get_intersection(Ray &ray, std::shared_ptr<SceneObj> &draw_object, Intersection &hit, Scene &scene) {
     float min_distance = std::numeric_limits<float>::max(); 
 
     bool intersect = false;
 
-    for (unsigned long int i=0; i < scene_objects.size(); i++) {
+    for (unsigned long int i=0; i < scene.scene_objects.size(); i++) {
         Intersection intersection;
-        bool found_intersection = scene_objects.at(i)->intersect(ray, intersection);
+        bool found_intersection = scene.scene_objects.at(i)->intersect(ray, intersection);
         if (found_intersection) {  
             intersect = true;
             float t = intersection.distance;
             if (t < min_distance) {
-                draw_object = scene_objects.at(i);
+                draw_object = scene.scene_objects.at(i);
                 hit = intersection;
                 min_distance = t;
             }
@@ -219,12 +219,12 @@ bool get_intersection(Ray &ray, std::shared_ptr<SceneObj> &draw_object, Intersec
     return intersect;
 }
 
-int calc_shadows(Ray &shadow_ray, std::shared_ptr<Light> &light, Intersection &hit) {
+int calc_shadows(Ray &shadow_ray, std::shared_ptr<Light> &light, Intersection &hit, Scene &scene) {
     double light_distance = light->distance(hit);
-    for (unsigned long int i=0; i < scene_objects.size(); i++) {
-        auto shadow_object = scene_objects.at(i);
+    for (unsigned long int i=0; i < scene.scene_objects.size(); i++) {
+        auto shadow_object = scene.scene_objects.at(i);
         Intersection shadow_hit;
-        bool found_intersection = scene_objects.at(i)->intersect(shadow_ray, shadow_hit);
+        bool found_intersection = scene.scene_objects.at(i)->intersect(shadow_ray, shadow_hit);
         if (found_intersection) {
             if (shadow_hit.distance < light_distance) {
                 return 0;
@@ -337,7 +337,7 @@ void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &
         return;
     }
 
-    bool intersect = get_intersection(ray, obj, hit);
+    bool intersect = get_intersection(ray, obj, hit, scene);
     if (!intersect) {
         color = scene.gray;
         return;
@@ -357,7 +357,7 @@ void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &
 
             // Shadow test
             Ray shadow_ray = Ray(hit.point, light_direction);
-            int visibility = calc_shadows(shadow_ray, light, hit);
+            int visibility = calc_shadows(shadow_ray, light, hit, scene);
 
             // Lambert's law
             double cos_theta = light_direction.dot(hit.normal);
@@ -391,7 +391,7 @@ void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &
                 std::shared_ptr<SceneObj> trace_obj;
                 Intersection trace_hit;
                 // trace(diffuse_ray, trace_color, depth+1);
-                trace(diffuse_ray, trace_color, trace_obj, trace_hit, depth+1);
+                trace(diffuse_ray, trace_color, trace_obj, trace_hit, scene, depth+1);
                 trace_color = trace_color * cos_theta;
                 indirect_lighting = indirect_lighting + trace_color;
             }
@@ -477,18 +477,20 @@ int main(int argc, char** argv) {
     auto reader = SceneReader();
     reader.process_scene_file(argv[1]);
 
+    auto scene = reader.scene;
+
     // Render scene
     // render(width, height);
-    render(reader.scene);
+    render(scene);
 
     // Go to painterly pipeline
-    // if (paint) {
-    //     auto painter = Painter(Expressionist(), particles, &img);
-    //     painter.paint();
-    // }
+    if (scene.paint) {
+        auto painter = Painter(Expressionist(), scene.particles, &scene.img);
+        painter.paint();
+    }
 
     // Save the image
-    reader.scene.img.save_png(reader.scene.filename.c_str());
+    scene.img.save_png(scene.filename.c_str());
 
     return 0;
 }
