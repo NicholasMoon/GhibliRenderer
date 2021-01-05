@@ -8,6 +8,7 @@
 #include "utilities.h"
 #include "objects.h"
 #include "lights.h"
+#include "particle.h"
 
 class Camera {
 public:
@@ -50,7 +51,8 @@ public:
     std::vector<Vec3> color_list;
     std::vector<Vec3> emission_values;
     std::vector<std::shared_ptr<Light>> scene_lights; 
-    std::vector<std::shared_ptr<SceneObj>> scene_objects;  
+    std::vector<std::shared_ptr<SceneObj>> scene_objects;
+    std::vector<std::shared_ptr<PaintParticle>> particles;   
     Camera cam;
     Scene() { 
         width = 0; 

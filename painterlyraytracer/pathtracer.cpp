@@ -5,9 +5,9 @@
 
 #define cimg_use_png
 
-#include <sstream>
-#include <fstream>
-#include <string>
+// #include <sstream>
+// #include <fstream>
+// #include <string>
 
 #include "utilities.h"
 #include "scene.h"
@@ -15,172 +15,172 @@
 #include "lights.h"
 #include "painter.h"
 
-// IMAGE
+// // IMAGE
 
-int width = 0; 
-int height = 0; 
-int depth = 1;
-int spectrum = 4;
-std::string filename;
-CImg<float> img;
+// int width = 0; 
+// int height = 0; 
+// int depth = 1;
+// int spectrum = 4;
+// std::string filename;
+// CImg<float> img;
 
-// SCENE
+// // SCENE
 
-Vec3 eye = Vec3(0, 0, 0);
-Vec3 forward = Vec3(0, 0, -1);
-Vec3 right = Vec3(1, 0, 0);
-Vec3 up = Vec3(0, 1, 0);
+// Vec3 eye = Vec3(0, 0, 0);
+// Vec3 forward = Vec3(0, 0, -1);
+// Vec3 right = Vec3(1, 0, 0);
+// Vec3 up = Vec3(0, 1, 0);
 
-Vec3 black = Vec3(0, 0, 0);
-Vec3 gray = Vec3(0.5, 0.5, 0.5);
-Vec3 white = Vec3(1, 1, 1);
-float gamma_val = 1.0;
-bool global_illumination = false;
-int secondary_rays = 1;
-int bounces = 2;
+// Vec3 black = Vec3(0, 0, 0);
+// Vec3 gray = Vec3(0.5, 0.5, 0.5);
+// Vec3 white = Vec3(1, 1, 1);
+// float gamma_val = 1.0;
+// bool global_illumination = false;
+// int secondary_rays = 1;
+// int bounces = 2;
 
-// PAINTING
-bool background = false;
-bool paint = false;
+// // PAINTING
+// bool background = false;
+// bool paint = false;
 
-std::vector<Vec3> color_list;
-std::vector<Vec3> emission_values;
-std::vector<std::shared_ptr<Light>> scene_lights; 
-std::vector<std::shared_ptr<SceneObj>> scene_objects;  
-std::vector<std::shared_ptr<PaintParticle>> particles; 
+// std::vector<Vec3> color_list;
+// std::vector<Vec3> emission_values;
+// std::vector<std::shared_ptr<Light>> scene_lights; 
+// std::vector<std::shared_ptr<SceneObj>> scene_objects;  
+// std::vector<std::shared_ptr<PaintParticle>> particles; 
 
-void sphere(std::vector<std::string> &tokens) {
-    float x = std::stof(tokens.at(1));
-    float y = std::stof(tokens.at(2));
-    float z = std::stof(tokens.at(3));
-    Vec3 center = Vec3(x, y, z);
-    float radius = std::stof(tokens.at(4));
+// void sphere(std::vector<std::string> &tokens) {
+//     float x = std::stof(tokens.at(1));
+//     float y = std::stof(tokens.at(2));
+//     float z = std::stof(tokens.at(3));
+//     Vec3 center = Vec3(x, y, z);
+//     float radius = std::stof(tokens.at(4));
 
-    // Create new sphere and add to render list
-    auto new_sphere = std::make_shared<Sphere>(center, radius);
-    new_sphere->material = 1; // make a material class
-    new_sphere->type = 1;
-    if (background) {
-        new_sphere->type = 2; 
-    }
-    new_sphere->color = color_list.back();
-    new_sphere->emission = emission_values.back();
-    scene_objects.push_back(new_sphere);
-}
+//     // Create new sphere and add to render list
+//     auto new_sphere = std::make_shared<Sphere>(center, radius);
+//     new_sphere->material = 1; // make a material class
+//     new_sphere->type = 1;
+//     if (background) {
+//         new_sphere->type = 2; 
+//     }
+//     new_sphere->color = color_list.back();
+//     new_sphere->emission = emission_values.back();
+//     scene_objects.push_back(new_sphere);
+// }
 
-void color(std::vector<std::string> &tokens) {
-    float r = std::stof(tokens.at(1));
-    float g = std::stof(tokens.at(2));
-    float b = std::stof(tokens.at(3));
-    Vec3 new_color = Vec3(r, g, b);
+// void color(std::vector<std::string> &tokens) {
+//     float r = std::stof(tokens.at(1));
+//     float g = std::stof(tokens.at(2));
+//     float b = std::stof(tokens.at(3));
+//     Vec3 new_color = Vec3(r, g, b);
     
-    color_list.push_back(new_color);
-}
+//     color_list.push_back(new_color);
+// }
 
-void emission(std::vector<std::string> &tokens) {
-    float e1 = std::stof(tokens.at(1));
-    float e2 = std::stof(tokens.at(2));
-    float e3 = std::stof(tokens.at(3));
-    Vec3 new_emission = Vec3(e1, e2, e3);
+// void emission(std::vector<std::string> &tokens) {
+//     float e1 = std::stof(tokens.at(1));
+//     float e2 = std::stof(tokens.at(2));
+//     float e3 = std::stof(tokens.at(3));
+//     Vec3 new_emission = Vec3(e1, e2, e3);
     
-    emission_values.push_back(new_emission);
-}
+//     emission_values.push_back(new_emission);
+// }
 
-void sun(std::vector<std::string> &tokens) {
-    float x = std::stof(tokens.at(1));
-    float y = std::stof(tokens.at(2));
-    float z = std::stof(tokens.at(3));
-    Vec3 direction = Vec3(x, y, z);
-    Vec3 color = color_list.back();
+// void sun(std::vector<std::string> &tokens) {
+//     float x = std::stof(tokens.at(1));
+//     float y = std::stof(tokens.at(2));
+//     float z = std::stof(tokens.at(3));
+//     Vec3 direction = Vec3(x, y, z);
+//     Vec3 color = color_list.back();
 
-    // Create new light and add to scene lights
-    auto new_light = std::make_shared<Sun>(direction, color);
-    scene_lights.push_back(new_light);
-}
+//     // Create new light and add to scene lights
+//     auto new_light = std::make_shared<Sun>(direction, color);
+//     scene_lights.push_back(new_light);
+// }
 
-void bulb(std::vector<std::string> &tokens) {
-    float x = std::stof(tokens.at(1));
-    float y = std::stof(tokens.at(2));
-    float z = std::stof(tokens.at(3));
-    Vec3 position = Vec3(x, y, z);
-    Vec3 color = color_list.back();
+// void bulb(std::vector<std::string> &tokens) {
+//     float x = std::stof(tokens.at(1));
+//     float y = std::stof(tokens.at(2));
+//     float z = std::stof(tokens.at(3));
+//     Vec3 position = Vec3(x, y, z);
+//     Vec3 color = color_list.back();
 
-    // Create new light and add to scene lights
-    auto new_light = std::make_shared<Bulb>(position, color);
-    scene_lights.push_back(new_light);
-}
+//     // Create new light and add to scene lights
+//     auto new_light = std::make_shared<Bulb>(position, color);
+//     scene_lights.push_back(new_light);
+// }
 
-void gi(std::vector<std::string> &tokens) {
-    global_illumination = true;
-}
+// void gi(std::vector<std::string> &tokens) {
+//     global_illumination = true;
+// }
 
-void spp(std::vector<std::string> &tokens) {
-    secondary_rays = std::stoi(tokens.at(1));
-}
+// void spp(std::vector<std::string> &tokens) {
+//     secondary_rays = std::stoi(tokens.at(1));
+// }
 
-void change_eye(std::vector<std::string> &tokens) {
-    float x = std::stof(tokens.at(1));
-    float y = std::stof(tokens.at(2));
-    float z = std::stof(tokens.at(3));
+// void change_eye(std::vector<std::string> &tokens) {
+//     float x = std::stof(tokens.at(1));
+//     float y = std::stof(tokens.at(2));
+//     float z = std::stof(tokens.at(3));
 
-    eye = Vec3(x, y, z);
-}
+//     eye = Vec3(x, y, z);
+// }
 
-void add_to_background(std::vector<std::string> &tokens) {
-    background = true;
-}
+// void add_to_background(std::vector<std::string> &tokens) {
+//     background = true;
+// }
 
-void add_to_foreground(std::vector<std::string> &tokens) {
-    background = false;
-}
+// void add_to_foreground(std::vector<std::string> &tokens) {
+//     background = false;
+// }
 
-void paintstyle(std::vector<std::string> &tokens) {
-    paint = true;
-}
+// void paintstyle(std::vector<std::string> &tokens) {
+//     paint = true;
+// }
 
-void create_png(std::vector<std::string> &tokens) {
-    width = std::stoi(tokens.at(1));
-    height = std::stoi(tokens.at(2));
-    filename = tokens.at(3);
+// void create_png(std::vector<std::string> &tokens) {
+//     width = std::stoi(tokens.at(1));
+//     height = std::stoi(tokens.at(2));
+//     filename = tokens.at(3);
 
-    // Create image where each pixel is a float and set all pixels to 0
-    img.assign(width, height, depth, spectrum, 0); // make member function of struct
+//     // Create image where each pixel is a float and set all pixels to 0
+//     img.assign(width, height, depth, spectrum, 0); // make member function of struct
 
-    // Set default color and emission values
-    color_list.push_back(Vec3(1, 1, 1));
-    emission_values.push_back(Vec3(0, 0, 0));
-}
+//     // Set default color and emission values
+//     color_list.push_back(Vec3(1, 1, 1));
+//     emission_values.push_back(Vec3(0, 0, 0));
+// }
 
-int process_tokens(std::vector<std::string> &tokens) {
-    std::string keyword = tokens.at(0);
+// int process_tokens(std::vector<std::string> &tokens) {
+//     std::string keyword = tokens.at(0);
 
-    if (keyword == "png") {
-        create_png(tokens);
-    } else if (keyword == "sphere") {
-        sphere(tokens);
-    } else if (keyword == "color") {
-        color(tokens);
-    } else if (keyword == "emission") {
-        emission(tokens);
-    } else if (keyword == "sun") {
-        sun(tokens);
-    } else if (keyword == "bulb") {
-        bulb(tokens);
-    } else if (keyword == "gi") {
-        gi(tokens);
-    } else if (keyword == "spp") {
-        spp(tokens);
-    } else if (keyword == "eye") {
-        change_eye(tokens);
-    } else if (keyword == "background") {
-        add_to_background(tokens);
-    } else if (keyword == "foreground") {
-        add_to_foreground(tokens);
-    } else if (keyword == "paint") {
-        paintstyle(tokens);
-    }
-    return 0;
-}
+//     if (keyword == "png") {
+//         create_png(tokens);
+//     } else if (keyword == "sphere") {
+//         sphere(tokens);
+//     } else if (keyword == "color") {
+//         color(tokens);
+//     } else if (keyword == "emission") {
+//         emission(tokens);
+//     } else if (keyword == "sun") {
+//         sun(tokens);
+//     } else if (keyword == "bulb") {
+//         bulb(tokens);
+//     } else if (keyword == "gi") {
+//         gi(tokens);
+//     } else if (keyword == "spp") {
+//         spp(tokens);
+//     } else if (keyword == "eye") {
+//         change_eye(tokens);
+//     } else if (keyword == "background") {
+//         add_to_background(tokens);
+//     } else if (keyword == "foreground") {
+//         add_to_foreground(tokens);
+//     } else if (keyword == "paint") {
+//         paintstyle(tokens);
+//     }
+//     return 0;
+// }
 
 // RAYTRACING
 
@@ -330,25 +330,49 @@ void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &
     }
 }
 
-void render(int width, int height) {
-    for (int x = 0; x < width; x++) {
-        for (int y = 0; y < height; y++) {
+// void render(int width, int height) {
+//     for (int x = 0; x < width; x++) {
+//         for (int y = 0; y < height; y++) {
+//             Vec3 pixel = Vec3(0, 0, 0);
+//             Ray ray = get_ray(x, y);
+//             Vec3 color;
+//             std::shared_ptr<SceneObj> draw_object;
+//             Intersection hit;
+//             trace(ray, color, draw_object, hit, 0);
+//             pixel = pixel + color;
+//             if (hit.distance > 0) {
+//                 if (draw_object->type == 1) {
+//                     write_color(img, x, y, color, 255);
+//                 } else if (draw_object->type == 2) {
+//                     auto paint_particle = std::make_shared<PaintParticle>(x, y, color, ray.direction, hit.normal, hit.distance, 1, 1); // none are edges for now
+//                     particles.push_back(paint_particle);
+//                 }   
+//             } else {
+//                 write_color(img, x, y, color, 255);   
+//             }
+//         }
+//     }
+// }
+
+void render(Scene &scene) {
+    for (int x = 0; x < scene.width; x++) {
+        for (int y = 0; y < scene.height; y++) {
             Vec3 pixel = Vec3(0, 0, 0);
-            Ray ray = get_ray(x, y);
+            Ray ray = scene.cam.get_ray(x, y, scene.width, scene.height);
             Vec3 color;
             std::shared_ptr<SceneObj> draw_object;
             Intersection hit;
-            trace(ray, color, draw_object, hit, 0);
+            trace(ray, color, draw_object, hit, scene, 0);
             pixel = pixel + color;
             if (hit.distance > 0) {
                 if (draw_object->type == 1) {
-                    write_color(img, x, y, color, 255);
+                    write_color(scene.img, x, y, color, 255);
                 } else if (draw_object->type == 2) {
                     auto paint_particle = std::make_shared<PaintParticle>(x, y, color, ray.direction, hit.normal, hit.distance, 1, 1); // none are edges for now
-                    particles.push_back(paint_particle);
+                    scene.particles.push_back(paint_particle);
                 }   
             } else {
-                write_color(img, x, y, color, 255);   
+                write_color(scene.img, x, y, color, 255);   
             }
         }
     }
@@ -356,35 +380,38 @@ void render(int width, int height) {
 
 int main(int argc, char** argv) {
     // Read file
-    std::ifstream stream(argv[1]);
-    std::string line;
+    // std::ifstream stream(argv[1]);
+    // std::string line;
 
-    // Process each line
-    while (std::getline(stream, line)) {
-        std::vector<std::string> tokens;
-        // Skip blank lines (fix later?)
-        if (line.size() == 1) {
-            continue;
-        }
-        std::string token;
-        std::istringstream s(line);
-        while (s >> token) {
-            tokens.push_back(token);
-        }
-        process_tokens(tokens);
-    }
+    // // Process each line
+    // while (std::getline(stream, line)) {
+    //     std::vector<std::string> tokens;
+    //     // Skip blank lines (fix later?)
+    //     if (line.size() == 1) {
+    //         continue;
+    //     }
+    //     std::string token;
+    //     std::istringstream s(line);
+    //     while (s >> token) {
+    //         tokens.push_back(token);
+    //     }
+    //     process_tokens(tokens);
+    // }
+    auto reader = SceneReader();
+    reader.process_scene_file(argv[1]);
 
-    // Render image
-    render(width, height);
+    // Render scene
+    // render(width, height);
+    render(reader.scene);
 
     // Go to painterly pipeline
-    if (paint) {
-        auto painter = Painter(Expressionist(), particles, &img);
-        painter.paint();
-    }
+    // if (paint) {
+    //     auto painter = Painter(Expressionist(), particles, &img);
+    //     painter.paint();
+    // }
 
     // Save the image
-    img.save_png(filename.c_str());
+    reader.scene.img.save_png(reader.scene.filename.c_str());
 
     return 0;
 }
