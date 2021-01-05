@@ -98,7 +98,8 @@ public:
             // float dy = 1;
 
             if ((lastDx * dx + lastDy * dy) < 0) {
-                dx, dy = -dx, -dy;
+                dx = -dx;
+                dy = -dy;
             }
             // std::cout << "bef dx: " << dx << " dy: " << dy << std::endl;
             dx = style.curvature_filter * dx + (1 - style.curvature_filter) * lastDx;
@@ -146,14 +147,14 @@ public:
 
         // Introduce more randomness
         std::vector<std::vector<StrokeParticle>> strokes;
-        for (int i=0; i < particles.size(); i++) {
+        for (unsigned long int i=0; i < particles.size(); i++) {
             auto s = makeSplineStroke(particles.at(i), min_x, max_x, min_y, max_y);
             strokes.push_back(s);
         }
         // std::shuffle(strokes.begin(), strokes.end(), std::random_device()); 
 
-        for (int i=0; i < strokes.size(); i++) {
-            for (int m=0; m < strokes.at(i).size(); m++) {
+        for (unsigned long int i=0; i < strokes.size(); i++) {
+            for (unsigned long int m=0; m < strokes.at(i).size(); m++) {
                 auto p0 = strokes.at(i).at(m);  // get current point in stroke
                 Vec3 stroke_color = p0.color; 
 

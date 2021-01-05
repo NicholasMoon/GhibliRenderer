@@ -203,7 +203,7 @@ bool get_intersection(Ray &ray, std::shared_ptr<SceneObj> &draw_object, Intersec
 
     bool intersect = false;
 
-    for (int i=0; i < scene_objects.size(); i++) {
+    for (unsigned long int i=0; i < scene_objects.size(); i++) {
         Intersection intersection;
         bool found_intersection = scene_objects.at(i)->intersect(ray, intersection);
         if (found_intersection) {  
@@ -221,7 +221,7 @@ bool get_intersection(Ray &ray, std::shared_ptr<SceneObj> &draw_object, Intersec
 
 int calc_shadows(Ray &shadow_ray, std::shared_ptr<Light> &light, Intersection &hit) {
     double light_distance = light->distance(hit);
-    for (int i=0; i < scene_objects.size(); i++) {
+    for (unsigned long int i=0; i < scene_objects.size(); i++) {
         auto shadow_object = scene_objects.at(i);
         Intersection shadow_hit;
         bool found_intersection = scene_objects.at(i)->intersect(shadow_ray, shadow_hit);
@@ -273,7 +273,7 @@ void trace(Ray &ray, Vec3 &color, std::shared_ptr<SceneObj> &obj, Intersection &
     if (material == 1) {
         Vec3 direct_lighting = Vec3(0, 0, 0);
 
-        for (int i=0; i < scene_lights.size(); i++) {
+        for (unsigned long int i=0; i < scene_lights.size(); i++) {
             auto light = scene_lights.at(i);
             Vec3 light_direction = light->direction(hit);
             double intensity = light->intensity(hit);
