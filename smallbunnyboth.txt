@@ -4,7 +4,7 @@ bulb 1 .5 1
 color 1 1 1
 bulb 0 1 0
 eye 0 .1 .15
-stencil_ring_samples 30
+stencil_ring_samples 10
 outline_cutoff .1
 stencil_radius 0.25
 stencil_rings 1

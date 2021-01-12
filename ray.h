@@ -24,8 +24,8 @@ class object;
 class ray {
  public:
   ray(double ox, double oy, double oz, double dx, double dy, double dz) : origin(ox,oy,oz), direction(dx,dy,dz) { };
-  bool cast(std::vector<object*> &objects, std::vector<light*> &lights, double color[4], int bounces, int lastObject, std::default_random_engine &generator, int x, int y, int width, double *depthMap, int post_process_outline, int &primary_objID, vec3 &hit_normal, int &object_type);
-  double detect_edge(std::vector<object*> &objects, std::vector<light*> &lights, double color[4], int bounces, int lastObject, std::default_random_engine &generator, int &stencil_objID);
+  bool cast(std::vector<object*> &objects, std::vector<light*> &lights, double color[4], int bounces, int lastObject, std::default_random_engine &generator, int x, int y, int width, double *depthMap, int &primary_objID, vec3 &hit_normal, int &object_type);
+  double detect_edge(std::vector<object*> &objects, std::vector<light*> &lights, double color[4], int bounces, int lastObject, std::default_random_engine &generator, int &stencil_objID, int &object_type);
   double castLight(std::vector<object*> &objects, light *targetLight, double distance);
   ~ray();
   vec3 origin;

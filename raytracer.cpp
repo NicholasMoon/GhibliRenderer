@@ -64,41 +64,13 @@ double maxItoD(int x, int y) {
 	}
 }
 
-vec3 cameraDirection(int camera_mode, double xi, double yi, double width, double height, vec3 &forward, vec3 &right, vec3 &up, int &shoot) {
+vec3 cameraDirection(double xi, double yi, double width, double height, vec3 &forward, vec3 &right, vec3 &up) {
 	vec3 camera_direction(0,0,0);
 	double sx = (2 * xi - width) / maxItoD(width,height);
 	double sy = (height - 2 * yi) / maxItoD(width,height);
-	if (camera_mode == 0) {
-		camera_direction.x = forward.x + sx * right.x + sy * up.x;
-		camera_direction.y = forward.y + sx * right.y + sy * up.y;
-		camera_direction.z = forward.z + sx * right.z + sy * up.z;
-	}
-	else if (camera_mode == 1) {
-		sx /= forward.magnitude();
-		sy /= forward.magnitude();
-		vec3 normalized_f = forward;
-		normalized_f.normalize();
-		double r_squared = sx * sx + sy * sy;
-		if (r_squared > 1) {
-			shoot = 0;
-			return camera_direction;
-		}
-		double sz = sqrt(1 - r_squared);
-		camera_direction.x = sz * normalized_f.x + sx * right.x + sy * up.x;
-		camera_direction.y = sz * normalized_f.y + sx * right.y + sy * up.y;
-		camera_direction.z = sz * normalized_f.z + sx * right.z + sy * up.z;
-	}
-	else if (camera_mode == 2) {
-		double theta_x = xi * (360 / width);
-		double theta_y = yi * (180 / height);
-		
-		double sx = cos(theta_x * PI/180);
-		double sy = sin(theta_y * PI/180);
-		
-		camera_direction.x = sx;
-		camera_direction.y = sy;
-		camera_direction.z = forward.z;
-	}
+	camera_direction.x = forward.x + sx * right.x + sy * up.x;
+	camera_direction.y = forward.y + sx * right.y + sy * up.y;
+	camera_direction.z = forward.z + sx * right.z + sy * up.z;
 	camera_direction.normalize();
 	return camera_direction;
 }
@@ -123,8 +95,6 @@ int main(int argc, char** argv) {
 	int v1, v2, v3, v1n, v2n, v3n;
 	vertex *vert1, *vert2, *vert3;
 	double lastNormal[3] = {0,0,0};
-	int spp = 1;
-	int camera_mode = 0;
 	double lastColor[3] = {1, 1, 1};
 	double resultColor[4] = {0, 0, 0, 0};
 	double sx, sy = 0;
@@ -145,7 +115,6 @@ int main(int argc, char** argv) {
 	int shoot = 1;
 	int output_depth = 0;
 	double e_slope = 1;
-	int post_process_outline = 0;
 	double stencil_radius = 0;
 	std::string v1parts = "";
 	std::string v2parts = "";
@@ -227,37 +196,6 @@ int main(int argc, char** argv) {
 			vertex *v = new vertex(coordinate, normal, color);
 			verts.push_back(v);
 		}
-		else if (!token.compare("trif")) {
-			ss >> v1;
-			ss >> v2;
-			ss >> v3;
-			if (v1 < 0) {
-				vert1 = verts.at(verts.size() + v1);
-			}
-			else {
-				vert1 = verts.at(v1 - 1);
-			}
-			if (v2 < 0) {
-				vert2 = verts.at(verts.size() + v2);
-			}
-			else {
-				vert2 = verts.at(v2 - 1);
-			}
-			if (v3 < 0) {
-				vert3 = verts.at(verts.size() + v3);
-			}
-			else {
-				vert3 = verts.at(v3 - 1);
-			}
-			material *m = new material(shininess, transparency, ior, roughness);
-			tri *t = new tri(vert1, vert2, vert3, lastColor, m, objectID);
-			objects.push_back(t);
-		}
-		else if (!token.compare("normal")) {
-			ss >> lastNormal[0];
-			ss >> lastNormal[1];
-			ss >> lastNormal[2];
-		}
 		else if (!token.compare("bulb")) {
 			ss >> x;
 			ss >> y;
@@ -322,18 +260,6 @@ int main(int argc, char** argv) {
 
 			right = forward.cross(up);
 			right.normalize();
-		}
-		else if (!token.compare("aa")) {
-			ss >> spp;
-		}
-		else if (!token.compare("fisheye")) {
-			camera_mode = 1;
-		}
-		else if (!token.compare("panorama")) {
-			camera_mode = 2;
-		}
-		else if (!token.compare("dof")) {
-			camera_mode = 2;
 		}
 		else if (!token.compare("v")) {
 			ss >> x;
@@ -425,14 +351,8 @@ int main(int argc, char** argv) {
 			tri *t = new tri(vert1, vert2, vert3, lastColor, m, objectID, object_type);
 			objects.push_back(t);
 		}
-		else if (!token.compare("output_depth")) {
-			output_depth = 1;
-		}
 		else if (!token.compare("stencil_radius")) {
 			ss >> stencil_radius;
-		}
-		else if (!token.compare("post_process_outline")) {
-			post_process_outline = 1;
 		}
 		else if (!token.compare("stencil_ring_samples")) {
 			ss >> stencil_ring_samples;
@@ -459,6 +379,8 @@ int main(int argc, char** argv) {
 	std::default_random_engine generator2;
 	generator2.seed(time(NULL));
 	double depthMap[width * height];
+	double edgeMap[width * height][3];
+	int objectTypeMap[width * height];
 	
 	
 	for (int yi = 0; yi < height; yi++) {
@@ -468,120 +390,76 @@ int main(int argc, char** argv) {
 			resultColor[1] = 0;
 			resultColor[2] = 0;
 			resultColor[3] = 0;
-			if (spp > 1) {
-				for (int sample = 0; sample < spp; sample++) {
-					int primary_objID = -1;
-					double rand_x = distribution(generator);
-					double rand_y = distribution(generator);
-					shoot = 1;
-					direction = cameraDirection(camera_mode, xi + rand_x, yi + rand_y, width, height, forward, right, up, shoot);
-					if (shoot) {
-						primary_ray = new ray(eye.x, eye.y, eye.z, direction.x, direction.y, direction.z);
-						primary_ray->cast(objects, lights, resultColor, bounces, -1, generator, xi, yi, width, depthMap, post_process_outline, primary_objID, hit_normal, object_type);
-						delete primary_ray;
-					}
-				}
-			}
-			else {
-				shoot = 1;
-				direction = cameraDirection(camera_mode, xi, yi, width, height, forward, right, up, shoot);
-				if (shoot) {
-					primary_ray = new ray(eye.x, eye.y, eye.z, direction.x, direction.y, direction.z);
-					int primary_objID = -1;
-					int objectType = 0;
-					if (primary_ray->cast(objects, lights, resultColor, bounces, -1, generator, xi, yi, width, depthMap, post_process_outline, primary_objID, hit_normal, objectType)) {
-						if (objectType == 1) {
-						    	std::uniform_real_distribution<double> distributionTheta(0, 360);
-							int edge_rays = 0;
-							double step_size = stencil_radius / stencil_rings;
-							double radius = 0;
-							int test_num = 0;
-							for (double ring_radius = stencil_radius; ring_radius > 0; ring_radius -= stencil_rings) {
-								for (test_num = 0; test_num < stencil_ring_samples; test_num++) {
-									radius += step_size;
-									double randTheta = distributionTheta(generator2);
-									double randx = radius * cos(randTheta * PI / 180);
-									double randy = radius * sin(randTheta * PI / 180);
-									vec3 newdir = cameraDirection(camera_mode, xi + randx, yi + randy, width, height, forward, right, up, shoot);
-									primary_ray->direction.x = newdir.x;
-									primary_ray->direction.y = newdir.y;
-									primary_ray->direction.z = newdir.z;
-									int stencil_objID = -1;
-									double edge_test = primary_ray->detect_edge(objects, lights, resultColor, bounces, -1, generator, stencil_objID);
-									if (stencil_objID != primary_objID) {
-										edge_rays++;
-									}
-									else if (std::abs(edge_test - depthMap[yi * width + xi])  > outline_cutoff) {
-										edge_rays++;
-									}
-									primary_ray->direction.x = direction.x;
-									primary_ray->direction.y = direction.y;
-									primary_ray->direction.z = direction.z;
-								}
+			direction = cameraDirection(xi, yi, width, height, forward, right, up);
+				primary_ray = new ray(eye.x, eye.y, eye.z, direction.x, direction.y, direction.z);
+				int primary_objID = -1;
+				int objectType = 0;
+				if (primary_ray->cast(objects, lights, resultColor, bounces, -1, generator, xi, yi, width, depthMap, primary_objID, hit_normal, objectType)) {
+					objectTypeMap[yi * width + xi] = objectType;
+				    	std::uniform_real_distribution<double> distributionTheta(0, 360);
+					int edge_rays = 0;
+					double step_size = stencil_radius / stencil_rings;
+					double radius = 0;
+					int test_num = 0;
+					for (double ring_radius = stencil_radius; ring_radius > 0; ring_radius -= stencil_rings) {
+						for (test_num = 0; test_num < stencil_ring_samples; test_num++) {
+							int edgeObjectType = 0;
+							radius += step_size;
+							double randTheta = distributionTheta(generator2);
+							double randx = radius * cos(randTheta * PI / 180);
+							double randy = radius * sin(randTheta * PI / 180);
+							vec3 newdir = cameraDirection(xi + randx, yi + randy, width, height, forward, right, up);
+							primary_ray->direction.x = newdir.x;
+							primary_ray->direction.y = newdir.y;
+							primary_ray->direction.z = newdir.z;
+							int stencil_objID = -1;
+							double edge_test = primary_ray->detect_edge(objects, lights, resultColor, bounces, -1, generator, stencil_objID, edgeObjectType);
+							primary_ray->direction.x = direction.x;
+							primary_ray->direction.y = direction.y;
+							primary_ray->direction.z = direction.z;
+							if (edgeObjectType == 0 && objectType == 0) {
+								continue;
 							}
-							double edge_strength = 1 - pow((std::abs(edge_rays - 0.5 * stencil_rings * stencil_ring_samples) / (0.5 * stencil_rings * stencil_ring_samples)),2);
-							resultColor[0] = resultColor[0] * (1 - edge_strength);
-							resultColor[1] = resultColor[1] * (1 - edge_strength);
-							resultColor[2] = resultColor[2] * (1 - edge_strength);
-						} else if (objectType == 0) {
-							vec3 particle_color(resultColor[0], resultColor[1], resultColor[2]);
-						    auto paint_particle = std::make_shared<PaintParticle>(xi, yi, particle_color, primary_ray->direction, hit_normal, depthMap[yi * width + xi], 1, 1); // none are edges for now
-						    paint_particles.push_back(paint_particle);
-						} 
+							else if (stencil_objID != primary_objID) {
+								edge_rays++;
+							}
+							else if (std::abs(edge_test - depthMap[yi * width + xi])  > outline_cutoff) {
+								edge_rays++;
+							}
+						}
+					}
+					double edge_strength = 1 - pow((std::abs(edge_rays - 0.5 * stencil_rings * stencil_ring_samples) / (0.5 * stencil_rings * stencil_ring_samples)),2);
+					//resultColor[0] = resultColor[0] * (1 - edge_strength);
+					//resultColor[1] = resultColor[1] * (1 - edge_strength);
+					//resultColor[2] = resultColor[2] * (1 - edge_strength);
+					edgeMap[yi * width + xi][0] = 1 - edge_strength;
+					edgeMap[yi * width + xi][1] = 1 - edge_strength;
+					edgeMap[yi * width + xi][2] = 1 - edge_strength;
+
+					if (objectType == 0) {
+						vec3 particle_color(resultColor[0], resultColor[1], resultColor[2]);
+					    	auto paint_particle = std::make_shared<PaintParticle>(xi, yi, particle_color, primary_ray->direction, hit_normal, depthMap[yi * width + xi], 1, 1); // none are edges for now
+						paint_particles.push_back(paint_particle);
+					} 
 					delete primary_ray;
 				}
-			}
-			}
-			resultColor[0] /= spp;
-			resultColor[1] /= spp;
-			resultColor[2] /= spp;
-			resultColor[3] /= spp;
-			if (output_depth) {
-				myImage(xi, yi, 0, 0) = clip(depthMap[yi * width + xi] * 20);
-				myImage(xi, yi, 0, 1) = clip(depthMap[yi * width + xi] * 20);
-				myImage(xi, yi, 0, 2) = clip(depthMap[yi * width + xi] * 20);
-				myImage(xi, yi, 0, 3) = clip(resultColor[3] * 255);
-			}
-			else {
-				myImage(xi, yi, 0, 0) = clip(resultColor[0] * 255);
-				myImage(xi, yi, 0, 1) = clip(resultColor[1] * 255);
-				myImage(xi, yi, 0, 2) = clip(resultColor[2] * 255);
-				myImage(xi, yi, 0, 3) = clip(resultColor[3] * 255);
-			}
+			myImage(xi, yi, 0, 0) = clip(resultColor[0] * 255);
+			myImage(xi, yi, 0, 1) = clip(resultColor[1] * 255);
+			myImage(xi, yi, 0, 2) = clip(resultColor[2] * 255);
+			myImage(xi, yi, 0, 3) = clip(resultColor[3] * 255);
 		}
-	}
-	if (post_process_outline) {
-		for (int yi = 1; yi < height - 1; yi++) {
-			for (int xi = 1; xi < width - 1; xi++) {
-				for (int layer = 0; layer < stencil_ring_samples; layer++) {
-					if (depthMap[yi * width + xi] - depthMap[yi * width + xi + (layer + 1)] > e_slope) {
-						myImage(xi, yi, 0, 0) = 0;
-						myImage(xi, yi, 0, 1) = 0;
-						myImage(xi, yi, 0, 2) = 0;
-					}
-					else if (depthMap[yi * width + xi] - depthMap[yi * width + xi - (layer + 1)] > e_slope) {
-						myImage(xi, yi, 0, 0) = 0;
-						myImage(xi, yi, 0, 1) = 0;
-						myImage(xi, yi, 0, 2) = 0;
-					}
-					else if (depthMap[yi * width + xi] - depthMap[(yi - (layer + 1)) * width + xi] > e_slope) {
-						myImage(xi, yi, 0, 0) = 0;
-						myImage(xi, yi, 0, 1) = 0;
-						myImage(xi, yi, 0, 2) = 0;
-					}
-					else if (depthMap[yi * width + xi] - depthMap[(yi + (layer + 1)) * width + xi] > e_slope) {
-						myImage(xi, yi, 0, 0) = 0;
-						myImage(xi, yi, 0, 1) = 0;
-						myImage(xi, yi, 0, 2) = 0;
-					}
-				}
-
-			}
-		}	
 	}
 	
 	auto painter = Painter(Expressionist(), paint_particles, &myImage);
-        painter.paint();
+        painter.paint(objectTypeMap);
+
+	for (int yj = 0; yj < height; yj++) {
+		for (int xj = 0; xj < width; xj++) {
+			myImage(xj, yj, 0, 0) = clip(myImage(xj, yj, 0, 0) * edgeMap[yj * width + xj][0]);
+			myImage(xj, yj, 0, 1) = clip(myImage(xj, yj, 0, 1) * edgeMap[yj * width + xj][1]);
+			myImage(xj, yj, 0, 2) = clip(myImage(xj, yj, 0, 2) * edgeMap[yj * width + xj][2]);
+		}
+	}
 
 
 	inputFile.close();

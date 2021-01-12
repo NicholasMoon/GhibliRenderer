@@ -126,7 +126,7 @@ public:
         return stroke;
     }
 
-    void paint_layer(int radius) {
+    void paint_layer(int radius, int *objectTypeMap) {
         std::shuffle(particles.begin(), particles.end(), std::random_device()); // add to utilities
 
         std::vector<vec3> edge_particles;
@@ -167,6 +167,7 @@ public:
                         int curr_y = y + k;
                         if (curr_x < 0 || curr_x >= img->width()) continue;
                         if (curr_y < 0 || curr_y >= img->height()) continue;
+			if (objectTypeMap[curr_y * img->width() + curr_x]) continue; 
                         int paint_num = brush[j+radius][k+radius];
                         if (paint_num) {
                             write_color(*img, curr_x, curr_y, stroke_color, 255);
@@ -177,9 +178,9 @@ public:
         }
     }
 
-    void paint() {
+    void paint(int *objectTypeMap) {
         create_mask(style.brush_size);
-        paint_layer(style.brush_size);
+        paint_layer(style.brush_size, objectTypeMap);
     }
 };
 
