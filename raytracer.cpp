@@ -27,6 +27,8 @@
 #include "particle.h"
 #include "painter.h"
 #include "style.h"
+#include "stroke.h"
+#include "brush.h"
 
 
 #define PI 3.14159265
@@ -381,68 +383,126 @@ int main(int argc, char** argv) {
 	double depthMap[width * height];
 	double edgeMap[width * height][3];
 	int objectTypeMap[width * height];
-	
-	
-	for (int yi = 0; yi < height; yi++) {
-		for (int xi = 0; xi < width; xi++) {
-			milestone = printProgress(xi, yi, width, height, milestone, start);
-			resultColor[0] = 0;
-			resultColor[1] = 0;
-			resultColor[2] = 0;
-			resultColor[3] = 0;
-			direction = cameraDirection(xi, yi, width, height, forward, right, up);
-				primary_ray = new ray(eye.x, eye.y, eye.z, direction.x, direction.y, direction.z);
-				int primary_objID = -1;
-				int objectType = 0;
-				if (primary_ray->cast(objects, lights, resultColor, bounces, -1, generator, xi, yi, width, depthMap, primary_objID, hit_normal, objectType)) {
-					objectTypeMap[yi * width + xi] = objectType;
-				    	std::uniform_real_distribution<double> distributionTheta(0, 360);
-					int edge_rays = 0;
-					double step_size = stencil_radius / stencil_rings;
-					double radius = 0;
-					int test_num = 0;
-					for (double ring_radius = stencil_radius; ring_radius > 0; ring_radius -= stencil_rings) {
-						for (test_num = 0; test_num < stencil_ring_samples; test_num++) {
-							int edgeObjectType = 0;
-							radius += step_size;
-							double randTheta = distributionTheta(generator2);
-							double randx = radius * cos(randTheta * PI / 180);
-							double randy = radius * sin(randTheta * PI / 180);
-							vec3 newdir = cameraDirection(xi + randx, yi + randy, width, height, forward, right, up);
-							primary_ray->direction.x = newdir.x;
-							primary_ray->direction.y = newdir.y;
-							primary_ray->direction.z = newdir.z;
-							int stencil_objID = -1;
-							double edge_test = primary_ray->detect_edge(objects, lights, resultColor, bounces, -1, generator, stencil_objID, edgeObjectType);
-							primary_ray->direction.x = direction.x;
-							primary_ray->direction.y = direction.y;
-							primary_ray->direction.z = direction.z;
-							if (edgeObjectType == 0 && objectType == 0) {
-								continue;
-							}
-							else if (stencil_objID != primary_objID) {
-								edge_rays++;
-							}
-							else if (std::abs(edge_test - depthMap[yi * width + xi])  > outline_cutoff) {
-								edge_rays++;
-							}
-						}
-					}
-					double edge_strength = 1 - pow((std::abs(edge_rays - 0.5 * stencil_rings * stencil_ring_samples) / (0.5 * stencil_rings * stencil_ring_samples)),2);
-					//resultColor[0] = resultColor[0] * (1 - edge_strength);
-					//resultColor[1] = resultColor[1] * (1 - edge_strength);
-					//resultColor[2] = resultColor[2] * (1 - edge_strength);
-					edgeMap[yi * width + xi][0] = 1 - edge_strength;
-					edgeMap[yi * width + xi][1] = 1 - edge_strength;
-					edgeMap[yi * width + xi][2] = 1 - edge_strength;
 
-					if (objectType == 0) {
-						vec3 particle_color(resultColor[0], resultColor[1], resultColor[2]);
-					    	auto paint_particle = std::make_shared<PaintParticle>(xi, yi, particle_color, primary_ray->direction, hit_normal, depthMap[yi * width + xi], 1, 1); // none are edges for now
-						paint_particles.push_back(paint_particle);
-					} 
-					delete primary_ray;
+	// Initialize stroke lengths (do this based on image resolution)
+    int small_size = 1;
+    int medium_size = 4;
+    int large_size = 20;
+    int strokeLengths[3] = {small_size, medium_size, large_size};
+
+    // Initialize brush set
+    auto const_brush_small = Brush(1, 1, &myImage);
+    const_brush_small.create_mask();
+
+    auto const_brush_medium = Brush(4, 1, &myImage);
+    const_brush_medium.create_mask();
+
+    auto const_brush_large = Brush(10, 1, &myImage);
+    const_brush_large.create_mask();
+
+    Brush brushSet[3] = {const_brush_small, const_brush_medium, const_brush_large};
+
+    // Initialize paint buffer
+    double paintBuffer[width * height] = {0}; // 0, not painted yet; 1, painted (read directly from image) --> alpha composite in both cases
+
+
+	// Randomize pixels
+	std::vector<int> x_values;
+    std::vector<int> y_values;
+
+    for (int i=0; i < width; i++) {
+        x_values.push_back(i);
+    }
+    for (int j=0; j < height; j++) {
+        y_values.push_back(j);
+    }
+    auto rng = std::default_random_engine {};
+    std::shuffle(x_values.begin(), x_values.end(), rng);
+    std::shuffle(y_values.begin(), y_values.end(), rng);
+    std::vector<std::tuple<int, int>> pixels;
+    for (int x : x_values) {
+        for (int y : y_values) {
+            pixels.push_back(std::make_tuple (x, y));
+        }
+    }
+    std::shuffle(pixels.begin(), pixels.end(), rng);
+	
+	
+	// for (int yi = 0; yi < height; yi++) {
+	// 	for (int xi = 0; xi < width; xi++) {
+	 for (std::tuple<int, int> curr_pixel : pixels) {
+        int xi = std::get<0>(curr_pixel);
+        int yi = std::get<1>(curr_pixel);
+		milestone = printProgress(xi, yi, width, height, milestone, start);
+		resultColor[0] = 0;
+		resultColor[1] = 0;
+		resultColor[2] = 0;
+		resultColor[3] = 0;
+		direction = cameraDirection(xi, yi, width, height, forward, right, up);
+		primary_ray = new ray(eye.x, eye.y, eye.z, direction.x, direction.y, direction.z);
+		int primary_objID = -1;
+		int objectType = 0;
+		if (primary_ray->cast(objects, lights, resultColor, bounces, -1, generator, xi, yi, width, depthMap, primary_objID, hit_normal, objectType)) {
+			objectTypeMap[yi * width + xi] = objectType;
+				std::uniform_real_distribution<double> distributionTheta(0, 360);
+			int edge_rays = 0;
+			double step_size = stencil_radius / stencil_rings;
+			double radius = 0;
+			int test_num = 0;
+			for (double ring_radius = stencil_radius; ring_radius > 0; ring_radius -= stencil_rings) {
+				for (test_num = 0; test_num < stencil_ring_samples; test_num++) {
+					int edgeObjectType = 0;
+					radius += step_size;
+					double randTheta = distributionTheta(generator2);
+					double randx = radius * cos(randTheta * PI / 180);
+					double randy = radius * sin(randTheta * PI / 180);
+					vec3 newdir = cameraDirection(xi + randx, yi + randy, width, height, forward, right, up);
+					primary_ray->direction.x = newdir.x;
+					primary_ray->direction.y = newdir.y;
+					primary_ray->direction.z = newdir.z;
+					int stencil_objID = -1;
+					double edge_test = primary_ray->detect_edge(objects, lights, resultColor, bounces, -1, generator, stencil_objID, edgeObjectType);
+					primary_ray->direction.x = direction.x;
+					primary_ray->direction.y = direction.y;
+					primary_ray->direction.z = direction.z;
+					if (edgeObjectType == 0 && objectType == 0) {
+						continue;
+					}
+					else if (stencil_objID != primary_objID) {
+						edge_rays++;
+					}
+					else if (std::abs(edge_test - depthMap[yi * width + xi])  > outline_cutoff) {
+						edge_rays++;
+					}
 				}
+			}
+			double edge_strength = 1 - pow((std::abs(edge_rays - 0.5 * stencil_rings * stencil_ring_samples) / (0.5 * stencil_rings * stencil_ring_samples)),2);
+			//resultColor[0] = resultColor[0] * (1 - edge_strength);
+			//resultColor[1] = resultColor[1] * (1 - edge_strength);
+			//resultColor[2] = resultColor[2] * (1 - edge_strength);
+			edgeMap[yi * width + xi][0] = 1 - edge_strength;
+			edgeMap[yi * width + xi][1] = 1 - edge_strength;
+			edgeMap[yi * width + xi][2] = 1 - edge_strength;
+
+			if (objectType == 0) {
+				vec3 particle_color(resultColor[0], resultColor[1], resultColor[2]);
+				auto paint_particle = std::make_shared<PaintParticle>(xi, yi, particle_color, primary_ray->direction, hit_normal, depthMap[yi * width + xi], 1, 1); // none are edges for now
+				paint_particles.push_back(paint_particle);
+
+				// Make new stroke
+                auto stroke = Stroke(xi, yi, particle_color, primary_ray->direction, hit_normal, depthMap[yi * width + xi]);
+                // Set these based on position and distance from camera
+                stroke.set_length(strokeLengths[2]);
+                stroke.set_curvature(0.8);
+                stroke.create(0, 0, myImage.width(), myImage.height());
+
+                // Choose brush and paint
+                auto brush = brushSet[1];
+                brush.paint(stroke, paintBuffer, objectTypeMap);
+			} 
+			delete primary_ray;
+		}
+		if (objectType == 1) {
 			myImage(xi, yi, 0, 0) = clip(resultColor[0] * 255);
 			myImage(xi, yi, 0, 1) = clip(resultColor[1] * 255);
 			myImage(xi, yi, 0, 2) = clip(resultColor[2] * 255);
@@ -450,8 +510,8 @@ int main(int argc, char** argv) {
 		}
 	}
 	
-	auto painter = Painter(Expressionist(), paint_particles, &myImage);
-        painter.paint(objectTypeMap);
+	// auto painter = Painter(Expressionist(), paint_particles, &myImage);
+    // painter.paint(objectTypeMap);
 
 	for (int yj = 0; yj < height; yj++) {
 		for (int xj = 0; xj < width; xj++) {

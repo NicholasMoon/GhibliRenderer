@@ -1,4 +1,4 @@
-png 400 400 smallbunnyboth.png
+png 200 200 smallbunnyboth.png
 color 1 1 1
 bulb 1 .5 1
 color 1 1 1
