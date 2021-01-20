@@ -33,8 +33,8 @@
 
 #define PI 3.14159265
 
-double printProgress(int xi, int yi, int width, int height, double milestone, time_t start) {
-	double progress = (double)yi / (double)height;
+double printProgress(int pixnum, int totalpixels, double milestone, time_t start) {
+	double progress = (double)pixnum / (double)totalpixels;
 	if (progress - milestone >= 0.1) {
 		std::cout << "Progress: " << (progress * 100) << "% done, time elapsed: " << difftime(time(NULL), start) << std::endl;
 		return progress;
@@ -383,6 +383,7 @@ int main(int argc, char** argv) {
 	double depthMap[width * height];
 	double edgeMap[width * height][3];
 	int objectTypeMap[width * height];
+	int shadowMap[width * height];
 
 	// Initialize stroke lengths (do this based on image resolution)
     int small_size = 1;
@@ -403,7 +404,11 @@ int main(int argc, char** argv) {
     Brush brushSet[3] = {const_brush_small, const_brush_medium, const_brush_large};
 
     // Initialize paint buffer
-    double paintBuffer[width * height] = {0}; // 0, not painted yet; 1, painted (read directly from image) --> alpha composite in both cases
+    double paintBuffer[width * height]; // 0, not painted yet; 1, painted (read directly from image) --> alpha composite in both cases
+
+	for (int pb = 0; pb < width * height; pb++) {
+		paintBuffer[pb] = 0;
+	}
 
 
 	// Randomize pixels
@@ -426,14 +431,13 @@ int main(int argc, char** argv) {
         }
     }
     std::shuffle(pixels.begin(), pixels.end(), rng);
-	
-	
-	// for (int yi = 0; yi < height; yi++) {
-	// 	for (int xi = 0; xi < width; xi++) {
-	 for (std::tuple<int, int> curr_pixel : pixels) {
-        int xi = std::get<0>(curr_pixel);
-        int yi = std::get<1>(curr_pixel);
-		milestone = printProgress(xi, yi, width, height, milestone, start);
+	int pixnum = 0;
+	int totalpixels = width * height;
+	for (std::tuple<int, int> curr_pixel : pixels) {
+        	int xi = std::get<0>(curr_pixel);
+        	int yi = std::get<1>(curr_pixel);
+		pixnum++;
+		milestone = printProgress(pixnum, totalpixels, milestone, start);
 		resultColor[0] = 0;
 		resultColor[1] = 0;
 		resultColor[2] = 0;
@@ -442,9 +446,16 @@ int main(int argc, char** argv) {
 		primary_ray = new ray(eye.x, eye.y, eye.z, direction.x, direction.y, direction.z);
 		int primary_objID = -1;
 		int objectType = 0;
-		if (primary_ray->cast(objects, lights, resultColor, bounces, -1, generator, xi, yi, width, depthMap, primary_objID, hit_normal, objectType)) {
+		std::vector<int> hit_list;
+		int shadowed = 0;
+		if (primary_ray->cast(objects, lights, resultColor, bounces, -1, generator, xi, yi, width, depthMap, primary_objID, hit_normal, objectType, hit_list, shadowed)) {
+			if (shadowed) {
+				shadowMap[yi * width + xi] = 1;
+			}
+
+
 			objectTypeMap[yi * width + xi] = objectType;
-				std::uniform_real_distribution<double> distributionTheta(0, 360);
+			std::uniform_real_distribution<double> distributionTheta(0, 360);
 			int edge_rays = 0;
 			double step_size = stencil_radius / stencil_rings;
 			double radius = 0;
@@ -461,11 +472,15 @@ int main(int argc, char** argv) {
 					primary_ray->direction.y = newdir.y;
 					primary_ray->direction.z = newdir.z;
 					int stencil_objID = -1;
-					double edge_test = primary_ray->detect_edge(objects, lights, resultColor, bounces, -1, generator, stencil_objID, edgeObjectType);
+					std::vector<int> edge_hit_list;
+					double edge_test = primary_ray->detect_edge(objects, lights, resultColor, bounces, -1, generator, stencil_objID, edgeObjectType, edge_hit_list);
 					primary_ray->direction.x = direction.x;
 					primary_ray->direction.y = direction.y;
 					primary_ray->direction.z = direction.z;
-					if (edgeObjectType == 0 && objectType == 0) {
+					if (edge_hit_list[0] != hit_list[0]) {
+						edge_rays++;
+					}
+					else if (edgeObjectType == 0 && objectType == 0) {
 						continue;
 					}
 					else if (stencil_objID != primary_objID) {
@@ -512,6 +527,16 @@ int main(int argc, char** argv) {
 	
 	// auto painter = Painter(Expressionist(), paint_particles, &myImage);
     // painter.paint(objectTypeMap);
+
+	for (int yk = 0; yk < height; yk++) {
+		for (int xk = 0; xk < width; xk++) {
+			if (shadowMap[yk * width + xk] && objectTypeMap[yk * width + xk] == 0) {
+				myImage(xk, yk, 0, 0) = clip(myImage(xk, yk, 0, 0) * .35);
+				myImage(xk, yk, 0, 1) = clip(myImage(xk, yk, 0, 1) * .35);
+				myImage(xk, yk, 0, 2) = clip(myImage(xk, yk, 0, 2) * .35);
+			}
+		}
+	}
 
 	for (int yj = 0; yj < height; yj++) {
 		for (int xj = 0; xj < width; xj++) {

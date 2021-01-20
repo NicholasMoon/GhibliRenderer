@@ -5,7 +5,7 @@
 
 #include "ray.h"
 
-bool ray::cast(std::vector<object*> &objects, std::vector<light*> &lights, double color[4], int bounces, int lastObject, std::default_random_engine &generator, int x, int y, int width, double *depthMap, int &primary_objID, vec3 &hit_normal, int &object_type) {
+bool ray::cast(std::vector<object*> &objects, std::vector<light*> &lights, double color[4], int bounces, int lastObject, std::default_random_engine &generator, int x, int y, int width, double *depthMap, int &primary_objID, vec3 &hit_normal, int &object_type, std::vector<int> &hit_list, int &shadowed) {
 	double distance = std::numeric_limits<double>::max();
 	int closestObject = -1;
 	double diffuse_color[3] = {0,0,0};
@@ -23,6 +23,7 @@ bool ray::cast(std::vector<object*> &objects, std::vector<light*> &lights, doubl
 		return false;
 	}
 	primary_objID = objects[closestObject]->objectID;
+	hit_list.push_back(objects[closestObject]->objectID);
 	if (x != -1 && y != -1) {
 		depthMap[y * width + x] = distance;
 	}
@@ -59,7 +60,7 @@ bool ray::cast(std::vector<object*> &objects, std::vector<light*> &lights, doubl
 		double reflect_dir_y = this->direction.y - 2 * (n_dot_i) * normal.y;
 		double reflect_dir_z = this->direction.z - 2 * (n_dot_i) * normal.z;
 		ray *reflect_ray = new ray(hitX, hitY, hitZ, reflect_dir_x, reflect_dir_y, reflect_dir_z);
-		reflect_ray->cast(objects, lights, reflection_color, bounces - 1, -1, generator, x, y, width, depthMap, primary_objID, hit_normal, object_type);
+		reflect_ray->cast(objects, lights, reflection_color, bounces - 1, -1, generator, x, y, width, depthMap, primary_objID, hit_normal, object_type, hit_list, shadowed);
 		delete reflect_ray;
 	}
 	if ((objects[closestObject]->mat->transparency.x > 0 || objects[closestObject]->mat->transparency.y > 0 || objects[closestObject]->mat->transparency.z > 0) && bounces > 0) {
@@ -96,7 +97,7 @@ bool ray::cast(std::vector<object*> &objects, std::vector<light*> &lights, doubl
 			refract_dir_y = this->direction.y - 2 * (n_dot_i) * normal.y;
 			refract_dir_z = this->direction.z - 2 * (n_dot_i) * normal.z;
 			ray *refract_ray = new ray(hitX, hitY, hitZ, refract_dir_x, refract_dir_y, refract_dir_z);
-			refract_ray->cast(objects, lights, refraction_color, bounces - 1, -1, generator, -1, -1, width, depthMap, primary_objID, hit_normal, object_type);
+			refract_ray->cast(objects, lights, refraction_color, bounces - 1, -1, generator, -1, -1, width, depthMap, primary_objID, hit_normal, object_type, hit_list, shadowed);
 			delete refract_ray;
 		}
 		else {
@@ -104,7 +105,7 @@ bool ray::cast(std::vector<object*> &objects, std::vector<light*> &lights, doubl
 			refract_dir_y = ior * this->direction.y + (ior * n_dot_i - sqrt(k)) * normal.y;
 			refract_dir_z = ior * this->direction.z + (ior * n_dot_i - sqrt(k)) * normal.z;
 			ray *refract_ray = new ray(hitX + (.0001) * refract_dir_x, hitY + (.0001) * refract_dir_y, hitZ + (.0001) * refract_dir_z, refract_dir_x, refract_dir_y, refract_dir_z);
-			refract_ray->cast(objects, lights, refraction_color, bounces - 1, closestObject, generator, -1, -1, width, depthMap, primary_objID, hit_normal, object_type);
+			refract_ray->cast(objects, lights, refraction_color, bounces - 1, closestObject, generator, -1, -1, width, depthMap, primary_objID, hit_normal, object_type, hit_list, shadowed);
 			delete refract_ray;
 		}
 	}
@@ -169,10 +170,15 @@ bool ray::cast(std::vector<object*> &objects, std::vector<light*> &lights, doubl
 				delete light_ray;
 				vec3 objectColor = objects[closestObject]->getColor();
 				if (distanceToBlock < distanceToLight) {
-					diffuse_color[0] += objectColor.x * lights[i]->c[0] / 6.0;
-					diffuse_color[1] += objectColor.y * lights[i]->c[1] / 6.0;
-					diffuse_color[2] += objectColor.z * lights[i]->c[2] / 6.0;
-					continue;
+					if (objects[closestObject]->object_type == 1) {
+						diffuse_color[0] += objectColor.x * lights[i]->c[0] / 6.0;
+						diffuse_color[1] += objectColor.y * lights[i]->c[1] / 6.0;
+						diffuse_color[2] += objectColor.z * lights[i]->c[2] / 6.0;
+						continue;
+					}
+					else {
+						shadowed = 1;
+					}
 				}
 				if (objects[closestObject]->mat->roughness > 0) {
 					normal.x += rand_x;
@@ -227,7 +233,7 @@ double ray::castLight(std::vector<object*> &objects, light *target_light, double
 	return distance;
 }
 
-double ray::detect_edge(std::vector<object*> &objects, std::vector<light*> &lights, double color[4], int bounces, int lastObject, std::default_random_engine &generator, int &stencil_objID, int &object_type) {
+double ray::detect_edge(std::vector<object*> &objects, std::vector<light*> &lights, double color[4], int bounces, int lastObject, std::default_random_engine &generator, int &stencil_objID, int &object_type, std::vector<int> &hit_list) {
 	double distance = std::numeric_limits<double>::max();
 	int closestObject = -1;
 	double diffuse_color[3] = {0,0,0};
@@ -242,6 +248,7 @@ double ray::detect_edge(std::vector<object*> &objects, std::vector<light*> &ligh
 		stencil_objID = objects[closestObject]->objectID;
 	}
 	object_type = objects[closestObject]->object_type;
+	hit_list.push_back(objects[closestObject]->objectID);
 	std::normal_distribution<double> distribution(0, objects[closestObject]->mat->roughness);
 	double rand_x = distribution(generator);
 	double rand_y = distribution(generator);
@@ -264,7 +271,7 @@ double ray::detect_edge(std::vector<object*> &objects, std::vector<light*> &ligh
 		double reflect_dir_z = this->direction.z - 2 * (n_dot_i) * normal.z;
 		ray *reflect_ray = new ray(hitX, hitY, hitZ, reflect_dir_x, reflect_dir_y, reflect_dir_z);
 		vec3 hitnormal(0,0,0);
-		distance = reflect_ray->detect_edge(objects, lights, color, bounces, -1, generator, stencil_objID, object_type);
+		distance = reflect_ray->detect_edge(objects, lights, color, bounces, -1, generator, stencil_objID, object_type, hit_list);
 		delete reflect_ray;
 	}
 	return distance;
