@@ -145,8 +145,8 @@ int main(int argc, char** argv) {
 	
 	cimg_library::CImg<float> myImage(width, height, 1, 4, 0);
 
-    	unsigned char zero = 0;
-    	myImage = zero;
+    unsigned char zero = 0;
+    myImage = zero;
 
 	std::vector<object*> objects;
 	std::vector<light*> lights;
@@ -431,7 +431,14 @@ int main(int argc, char** argv) {
 	double depthMap[width * height];
 	double edgeMap[width * height][3];
 	int objectTypeMap[width * height];
+	int objectBoundaryMap[width * height];
+	int objectIDMap[width * height];
 	int shadowMap[width * height];
+	float paintMap[width * height]; // paint density values
+
+	for (int pm = 0; pm < width * height; pm++) {
+		paintMap[pm] = 0;
+	}
 
 	// Initialize stroke lengths (do this based on image resolution)
     int small_size = 1;
@@ -450,14 +457,6 @@ int main(int argc, char** argv) {
     const_brush_large.create_mask();
 
     Brush brushSet[3] = {const_brush_small, const_brush_medium, const_brush_large};
-
-    // Initialize paint buffer
-    double paintBuffer[width * height]; // 0, not painted yet; 1, painted (read directly from image) --> alpha composite in both cases
-
-	for (int pb = 0; pb < width * height; pb++) {
-		paintBuffer[pb] = 0;
-	}
-
 
 	// Randomize pixels
 	std::vector<int> x_values;
@@ -501,8 +500,9 @@ int main(int argc, char** argv) {
 				shadowMap[yi * width + xi] = 1;
 			}
 
-
 			objectTypeMap[yi * width + xi] = objectType;
+			objectBoundaryMap[yi * width + xi] = hit_list.front();
+			objectIDMap[yi * width + xi] = primary_objID;
 			std::uniform_real_distribution<double> distributionTheta(0, 360);
 			int edge_rays = 0;
 			double step_size = stencil_radius / stencil_rings;
@@ -549,9 +549,9 @@ int main(int argc, char** argv) {
 
 			if (objectType == 0) {
 				vec3 particle_color(resultColor[0], resultColor[1], resultColor[2]);
-				auto paint_particle = std::make_shared<PaintParticle>(xi, yi, particle_color, primary_ray->direction, hit_normal, depthMap[yi * width + xi], 1, 1); // none are edges for now
-				paint_particles.push_back(paint_particle);
-
+				// auto paint_particle = std::make_shared<PaintParticle>(xi, yi, particle_color, primary_ray->direction, hit_normal, depthMap[yi * width + xi], 1, 1); // none are edges for now
+				// paint_particles.push_back(paint_particle);
+				
 				// Make new stroke
                 auto stroke = Stroke(xi, yi, particle_color, primary_ray->direction, hit_normal, depthMap[yi * width + xi]);
                 // Set these based on position and distance from camera
@@ -561,7 +561,7 @@ int main(int argc, char** argv) {
 
                 // Choose brush and paint
                 auto brush = brushSet[1];
-                brush.paint(stroke, paintBuffer, objectTypeMap);
+                brush.paint(stroke, paintMap, objectTypeMap, objectBoundaryMap, objectIDMap, hit_list.front(), primary_objID);
 			} 
 			delete primary_ray;
 		}

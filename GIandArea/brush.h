@@ -112,7 +112,7 @@ public:
         return 0;
     }
 
-    void paint(Stroke &stroke, double *paintBuffer, int *objectTypeMap) { 
+    void paint(Stroke &stroke, float *paintMap, int *objectTypeMap, int *objectBoundaryMap, int *objectIDMap, int primaryObjectBoundary, int currObjectID) { 
         for (int i=0; i < stroke.points.size(); i++) { // iterate through all points in stroke
             auto curr_stroke_point = stroke.points.at(i);
             vec3 color = stroke.color; 
@@ -128,17 +128,19 @@ public:
                     if (curr_x < 0 || curr_x >= img->width()) continue;
                     if (curr_y < 0 || curr_y >= img->height()) continue;
                     if (objectTypeMap[curr_y * img->width() + curr_x]) continue; 
+                    if (objectBoundaryMap[curr_y * img->width() + curr_x] != primaryObjectBoundary) continue; 
+                    if (objectIDMap[curr_y * img->width() + curr_x] != currObjectID) continue;
                     double paint_num = mask[j+radius][k+radius];
                     if (paint_num) {
                         vec3 mix_color, final_color;
                         double mix_alpha, final_alpha;
                         final_color = color;
                         final_alpha = 255;
-                        // if (paintBuffer[curr_y * img->width() + curr_x] == 0) {
+                        // if (paintMap[curr_y * img->width() + curr_x] == 0) {
                         //     mix_color = vec3(1, 1, 1);
                         //     mix_alpha = 1 - paint_num;
                         //     alpha_composite(stroke.color, mix_color, paint_num, mix_alpha, final_color, final_alpha);
-                        //     paintBuffer[curr_y * img->width() + curr_x] = 1;
+                        //     paintMap[curr_y * img->width() + curr_x] = 1;
                         // } 
                         // else {
                         //     double r = ((*img)(curr_x, curr_y, 0, 0) / 255);
