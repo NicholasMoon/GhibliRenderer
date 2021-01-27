@@ -23,15 +23,6 @@ void stroke::create(vec3 gradient, double min_x, double min_y, double max_x, dou
     double lastDy = 0;
 
     for (int i=1; i < max_length; i++) {
-        // // std::cout << "x: " << x << "y: " << y << std::endl;
-        // // Get unit vector of gradient
-        // double gx = normal.x;
-        // double gy = normal.y;
-        // // std::cout << "gx: " << gx << " gy: " << gy << std::endl;
-        // if (gx == 0 && gy == 0) continue;
-        // double dx = -gy;
-        // double dy = -gx;
-
         // Get unit vector of gradient
         double gx = gradient.x;
         double gy = -gradient.y; // rotate normal to be oriented correctly in x-y plane (positive y should go up not down)

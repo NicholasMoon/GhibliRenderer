@@ -492,24 +492,6 @@ int main(int argc, char** argv) {
 		paintMap[pm] = 0;
 	}
 
-	// // Initialize stroke lengths (do this based on image resolution)
-    // int small_size = 1;
-    // int medium_size = 4;
-    // int large_size = 20;
-    // int strokeLengths[3] = {small_size, medium_size, large_size};
-
-    // // Initialize brush set
-    // auto const_brush_small = Brush(1, 1, &myImage);
-    // const_brush_small.create_mask();
-
-    // auto const_brush_medium = Brush(4, 1, &myImage);
-    // const_brush_medium.create_mask();
-
-    // auto const_brush_large = Brush(10, 1, &myImage);
-    // const_brush_large.create_mask();
-
-    // Brush brushSet[3] = {const_brush_small, const_brush_medium, const_brush_large};
-
 	// Randomize pixels
 	std::vector<int> x_values;
     std::vector<int> y_values;
