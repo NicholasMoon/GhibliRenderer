@@ -185,6 +185,27 @@ int main(int argc, char** argv) {
 	std::vector<std::shared_ptr<PaintParticle>> paint_particles;
     ray *primary_ray;
 	ray *light_dx_ray, *light_dy_ray;
+	stroke *paint_stroke;
+	brush *paint_brush;
+	brush *const_brush_small, *const_brush_medium, *const_brush_large;
+
+	// Initialize stroke lengths (do this based on image resolution)
+    int small_size = 1;
+    int medium_size = 10;
+    int large_size = 20;
+    int strokeLengths[3] = {small_size, medium_size, large_size};
+
+    // Initialize brush set
+    const_brush_small = new constbrush(1);
+    const_brush_small->create_mask();
+
+    const_brush_medium = new constbrush(4);
+    const_brush_medium->create_mask();
+
+    const_brush_large = new constbrush(10);
+    const_brush_large->create_mask();
+
+    brush *brushSet[3] = {const_brush_small, const_brush_medium, const_brush_large};
 	
 	while (std::getline(inputFile, lineBuffer)) {
 		if (lineBuffer.empty()) {
@@ -471,23 +492,23 @@ int main(int argc, char** argv) {
 		paintMap[pm] = 0;
 	}
 
-	// Initialize stroke lengths (do this based on image resolution)
-    int small_size = 1;
-    int medium_size = 4;
-    int large_size = 20;
-    int strokeLengths[3] = {small_size, medium_size, large_size};
+	// // Initialize stroke lengths (do this based on image resolution)
+    // int small_size = 1;
+    // int medium_size = 4;
+    // int large_size = 20;
+    // int strokeLengths[3] = {small_size, medium_size, large_size};
 
-    // Initialize brush set
-    auto const_brush_small = Brush(1, 1, &myImage);
-    const_brush_small.create_mask();
+    // // Initialize brush set
+    // auto const_brush_small = Brush(1, 1, &myImage);
+    // const_brush_small.create_mask();
 
-    auto const_brush_medium = Brush(4, 1, &myImage);
-    const_brush_medium.create_mask();
+    // auto const_brush_medium = Brush(4, 1, &myImage);
+    // const_brush_medium.create_mask();
 
-    auto const_brush_large = Brush(10, 1, &myImage);
-    const_brush_large.create_mask();
+    // auto const_brush_large = Brush(10, 1, &myImage);
+    // const_brush_large.create_mask();
 
-    Brush brushSet[3] = {const_brush_small, const_brush_medium, const_brush_large};
+    // Brush brushSet[3] = {const_brush_small, const_brush_medium, const_brush_large};
 
 	// Randomize pixels
 	std::vector<int> x_values;
@@ -616,15 +637,16 @@ int main(int argc, char** argv) {
 				getDrawingGradient(hit_normal, resultColor, lightDxColor, lightDyColor, stroke_gradient, pixnum);
 				
 				// Make new stroke
-                auto stroke = Stroke(xi, yi, particle_color, primary_ray->direction, hit_normal, depthMap[yi * width + xi]);
+                paint_stroke = new stroke(xi, yi, particle_color, primary_ray->direction, hit_normal, depthMap[yi * width + xi]);
                 // Set these based on position and distance from camera
-                stroke.set_length(strokeLengths[2]);
-                stroke.set_curvature(0.8);
-                stroke.create(stroke_gradient, 0, 0, myImage.width(), myImage.height());
+                paint_stroke->set_length(strokeLengths[2]);
+                paint_stroke->set_curvature(0.8);
+                paint_stroke->create(stroke_gradient, 0, 0, myImage.width(), myImage.height());
 
                 // Choose brush and paint
-                auto brush = brushSet[1];
-                brush.paint(stroke, paintMap, objectTypeMap, objectBoundaryMap, objectIDMap, hit_list.front(), primary_objID);
+                paint_brush = brushSet[1];
+				paint_brush->paint(paint_stroke, paintMap, objectTypeMap, objectBoundaryMap, objectIDMap, hit_list.front(), primary_objID, &myImage);
+				delete paint_stroke;
 			} 
 			delete primary_ray;
 		}
