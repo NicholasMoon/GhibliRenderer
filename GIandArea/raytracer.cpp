@@ -77,7 +77,32 @@ vec3 cameraDirection(double xi, double yi, double width, double height, vec3 &fo
 	return camera_direction;
 }
 
+void getDrawingGradient(vec3 hit_normal, double *old_color, double *light_x_color, double *light_y_color, vec3 &final_gradient, int pixnum) {
+    // See which is stronger - edge or light gradient and draw strokes perpendicular to this
 
+    // Edge gradient
+    double ex = hit_normal.x;
+    double ey = hit_normal.y;
+    vec3 edge_gradient(ex, ey, 0);
+
+    // Light gradient 
+    double old_light_total = old_color[0] + old_color[1] + old_color[2];
+    double x_light_total = light_x_color[0] + light_x_color[1] + light_x_color[2];
+    double y_light_total = light_y_color[0] + light_y_color[1] + light_y_color[2];
+
+    vec3 light_gradient(x_light_total - old_light_total, y_light_total - old_light_total, 0);
+
+    // Weighting
+    double edge = edge_gradient.magnitude();
+    double light = std::min(2.0 * light_gradient.magnitude(), pow(1 - edge, 2));
+
+    // See if either vector is 0 length
+    if (edge_gradient.magnitude() != 0) edge_gradient.normalize();
+    if (light_gradient.magnitude() != 0) light_gradient.normalize();
+
+    // final_gradient = (edge_gradient * edge + light_gradient * light).normalize();
+    final_gradient = edge_gradient;
+}
 
 int main(int argc, char** argv) {
 	time_t start = time(0);
@@ -99,6 +124,8 @@ int main(int argc, char** argv) {
 	double lastNormal[3] = {0,0,0};
 	double lastColor[3] = {1, 1, 1};
 	double resultColor[4] = {0, 0, 0, 0};
+	double lightDxColor[4] = {0, 0, 0, 0};
+	double lightDyColor[4] = {0, 0, 0, 0};
 	double sx, sy = 0;
 	vec3 eye(0,0,0);
 	vec3 forward(0,0,-1);
@@ -111,6 +138,9 @@ int main(int argc, char** argv) {
 	vec3 *vert2n;
 	vec3 *vert3n;
 	vec3 hit_normal(0,0,0);
+	vec3 light_dx_right(0,0,0);
+	vec3 light_dy_up(0,0,0);
+	vec3 stroke_gradient(0,0,0);
 	int stencil_ring_samples = 0;
 	double stencil_rings = 0;
 	double outline_cutoff = 1;
@@ -153,7 +183,8 @@ int main(int argc, char** argv) {
 	std::vector<vertex*> verts;
 	std::vector<vec3*> normals;
 	std::vector<std::shared_ptr<PaintParticle>> paint_particles;
-        ray *primary_ray;
+    ray *primary_ray;
+	ray *light_dx_ray, *light_dy_ray;
 	
 	while (std::getline(inputFile, lineBuffer)) {
 		if (lineBuffer.empty()) {
@@ -489,6 +520,14 @@ int main(int argc, char** argv) {
 		resultColor[1] = 0;
 		resultColor[2] = 0;
 		resultColor[3] = 0;
+		lightDxColor[0] = 0;
+		lightDxColor[1] = 0;
+		lightDxColor[2] = 0;
+		lightDxColor[3] = 0;
+		lightDyColor[0] = 0;
+		lightDyColor[1] = 0;
+		lightDyColor[2] = 0;
+		lightDyColor[3] = 0;
 		direction = cameraDirection(xi, yi, width, height, forward, right, up);
 		primary_ray = new ray(eye.x, eye.y, eye.z, direction.x, direction.y, direction.z);
 		int primary_objID = -1;
@@ -551,13 +590,37 @@ int main(int argc, char** argv) {
 				vec3 particle_color(resultColor[0], resultColor[1], resultColor[2]);
 				// auto paint_particle = std::make_shared<PaintParticle>(xi, yi, particle_color, primary_ray->direction, hit_normal, depthMap[yi * width + xi], 1, 1); // none are edges for now
 				// paint_particles.push_back(paint_particle);
+
+				// Get drawing gradient
+				light_dx_right.x = right.x * 0.001;
+				light_dx_right.y = right.y * 0.001;
+				light_dx_right.z = right.z * 0.001;
+				light_dy_up.x = up.x * 0.001;
+				light_dy_up.y = up.y * 0.001;
+				light_dy_up.z = up.z * 0.001;
+				// vec3 light_dx_dir = cameraDirection(xi, yi, width, height, forward, light_dx_right, up); // adjust right vector
+				// vec3 light_dy_dir = cameraDirection(xi, yi, width, height, forward, right, light_dy_up); // adjust up vector
+				light_dx_ray = new ray(eye.x, eye.y, eye.z, direction.x + light_dx_right.x, direction.y + light_dx_right.y, direction.z + light_dx_right.z);
+				light_dy_ray = new ray(eye.x, eye.y, eye.z, direction.x + light_dy_up.x, direction.y + light_dy_up.y, direction.z + light_dy_up.z);
+
+				int lightObjectType = 0;
+				int light_objID = -1;
+				std::vector<int> light_hit_list;
+				vec3 light_hit_normal(0,0,0);
+				light_dx_ray->cast(objects, lights, lightDxColor, bounces, -1, generator, 1, xi, yi, width, depthMap, light_objID, light_hit_normal, lightObjectType, light_hit_list, shadowed, flat, light_samples, indirect_samples, indirect_bounces);
+				light_dy_ray->cast(objects, lights, lightDyColor, bounces, -1, generator, 1, xi, yi, width, depthMap, light_objID, light_hit_normal, lightObjectType, light_hit_list, shadowed, flat, light_samples, indirect_samples, indirect_bounces);
+
+				delete light_dx_ray;
+				delete light_dy_ray;
+
+				getDrawingGradient(hit_normal, resultColor, lightDxColor, lightDyColor, stroke_gradient, pixnum);
 				
 				// Make new stroke
                 auto stroke = Stroke(xi, yi, particle_color, primary_ray->direction, hit_normal, depthMap[yi * width + xi]);
                 // Set these based on position and distance from camera
                 stroke.set_length(strokeLengths[2]);
                 stroke.set_curvature(0.8);
-                stroke.create(0, 0, myImage.width(), myImage.height());
+                stroke.create(stroke_gradient, 0, 0, myImage.width(), myImage.height());
 
                 // Choose brush and paint
                 auto brush = brushSet[1];

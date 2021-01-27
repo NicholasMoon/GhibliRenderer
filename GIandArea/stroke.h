@@ -22,13 +22,9 @@ public:
         depth = dep;
     }
 
-    void create(double min_x, double min_y, double max_x, double max_y) {
+    void create(vec3 gradient, double min_x, double min_y, double max_x, double max_y) {
         std::tuple<double, double> s0 = std::make_tuple (x0, y0);
         points.push_back(s0);
-
-        // if (particle->edge == 2) {
-        //     return stroke;
-        // }
 
         double x = x0;
         double y = y0;
@@ -36,25 +32,23 @@ public:
         double lastDy = 0;
 
         for (int i=1; i < max_length; i++) {
-            // std::cout << "x: " << x << "y: " << y << std::endl;
             // Get unit vector of gradient
-            double gx = normal.x;
-            double gy = normal.y;
-            // std::cout << "gx: " << gx << " gy: " << gy << std::endl;
-            // if (gx == 0 && gy == 0) continue;
+            double gx = gradient.x;
+            double gy = -gradient.y;
+            
+            if (gx == 0 && gy == 0) continue;
             double dx = -gy;
-            double dy = -gx;
-            // double dx = -1;
-            // double dy = 0; 
+            double dy = gx;
+            // normal directions: (-gy, gx) or (gy, -gx)
 
             if ((lastDx * dx + lastDy * dy) < 0) {
                 dx = -dx;
                 dy = -dy;
             }
-            dx = curvature_filter * dx + (1 - curvature_filter) * lastDx;
-            dy = curvature_filter * dy + (1 - curvature_filter) * lastDy;
-            dx = dx / sqrt(dx * dx + dy * dy);
-            dy = dy / sqrt(dx * dx + dy * dy);
+            // dx = curvature_filter * dx + (1 - curvature_filter) * lastDx;
+            // dy = curvature_filter * dy + (1 - curvature_filter) * lastDy;
+            // dx = dx / sqrt(dx * dx + dy * dy);
+            // dy = dy / sqrt(dx * dx + dy * dy);
 
             // float yDistort = Vec3(dx, dy, 0).mag() * style.curvature_filter * (x - 0.5) * (x - 0.5);
 
