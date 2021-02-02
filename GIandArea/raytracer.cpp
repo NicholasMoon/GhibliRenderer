@@ -101,7 +101,13 @@ void getDrawingGradient(vec3 hit_normal, double *old_color, double *light_x_colo
     if (light_gradient.magnitude() != 0) light_gradient.normalize();
 
     // final_gradient = (edge_gradient * edge + light_gradient * light).normalize();
-    final_gradient = edge_gradient;
+	final_gradient = light_gradient;
+	// if (edge >= 0.6) {
+    //     final_gradient = edge_gradient;
+    // }
+    // else {
+    //     final_gradient = light_gradient;
+    // }
 }
 
 int main(int argc, char** argv) {
@@ -492,6 +498,24 @@ int main(int argc, char** argv) {
 		paintMap[pm] = 0;
 	}
 
+	// // Initialize stroke lengths (do this based on image resolution)
+    // int small_size = 1;
+    // int medium_size = 4;
+    // int large_size = 20;
+    // int strokeLengths[3] = {small_size, medium_size, large_size};
+
+    // // Initialize brush set
+    // auto const_brush_small = Brush(1, 1, &myImage);
+    // const_brush_small.create_mask();
+
+    // auto const_brush_medium = Brush(4, 1, &myImage);
+    // const_brush_medium.create_mask();
+
+    // auto const_brush_large = Brush(10, 1, &myImage);
+    // const_brush_large.create_mask();
+
+    // Brush brushSet[3] = {const_brush_small, const_brush_medium, const_brush_large};
+
 	// Randomize pixels
 	std::vector<int> x_values;
     std::vector<int> y_values;
@@ -617,13 +641,16 @@ int main(int argc, char** argv) {
 				delete light_dy_ray;
 
 				getDrawingGradient(hit_normal, resultColor, lightDxColor, lightDyColor, stroke_gradient, pixnum);
+				double cosTheta = hit_normal.dot(primary_ray->direction);
+				bool inside = false;
+				if (cosTheta > 0) inside = true;
 				
 				// Make new stroke
                 paint_stroke = new stroke(xi, yi, particle_color, primary_ray->direction, hit_normal, depthMap[yi * width + xi]);
                 // Set these based on position and distance from camera
-                paint_stroke->set_length(strokeLengths[2]);
+                paint_stroke->set_length(strokeLengths[1]);
                 paint_stroke->set_curvature(0.8);
-                paint_stroke->create(stroke_gradient, 0, 0, myImage.width(), myImage.height());
+                paint_stroke->create(stroke_gradient, inside, 0, 0, myImage.width(), myImage.height());
 
                 // Choose brush and paint
                 paint_brush = brushSet[1];
