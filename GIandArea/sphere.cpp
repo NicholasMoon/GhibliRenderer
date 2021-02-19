@@ -101,6 +101,13 @@ vec3 sphere::getNormal(double x, double y, double z, int flat) {
 	return vec3(x - this->x, y - this->y, z - this->z);
 }
 
+bool sphere::in_bounding_box(AABB *bounding_box) {
+	// seperating axis theorem
+
+return true;
+
+}
+
 sphere::~sphere() {
 
 }

@@ -138,6 +138,12 @@ vec3 plane::getNormal(double x, double y, double z, int flat) {
 	return this->n;
 }
 
+bool plane::in_bounding_box(AABB *bounding_box) {
+
+return true;
+
+}
+
 plane::~plane() {
 
 }

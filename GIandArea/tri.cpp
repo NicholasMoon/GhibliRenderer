@@ -218,6 +218,104 @@ vec3 tri::getNormal(double x, double y, double z, int flat) {
 	}
 }
 
+bool tri::SAT_projection(vec3 &axis, vec3 &center, vec3 &extents, vec3 &box_normal_x, vec3 &box_normal_y, vec3 &box_normal_z, vec3 &vc1, vec3 &vc2, vec3 &vc3) {
+	double v1_projection = vc1.dot(axis);
+	double v2_projection = vc2.dot(axis);
+	double v3_projection = vc3.dot(axis);
+
+	double r = extents.x * std::abs(box_normal_x.dot(axis)) + extents.y * std::abs(box_normal_y.dot(axis)) + extents.z * std::abs(box_normal_z.dot(axis));
+
+	if (std::max(-Max_Double(v1_projection, v2_projection, v3_projection), Min_Double(v1_projection, v2_projection, v3_projection)) > r) {
+		return false;
+	}
+	return true;
+}
+
+bool tri::in_bounding_box(AABB *bounding_box) {
+	// seperating axis theorem -> gdbooks.gitbooks.io/3dcollisions/content/Chapter4/aabb-triangle.html
+	vec3 vc1(this->v1.xyz.x, this->v1.xyz.y, this->v1.xyz.z);
+	vec3 vc2(this->v2.xyz.x, this->v2.xyz.y, this->v2.xyz.z);
+	vec3 vc3(this->v3.xyz.x, this->v3.xyz.y, this->v3.xyz.z);
+	vec3 center((bounding_box->min_coordinates.x + bounding_box->max_coordinates.x) / 2, (bounding_box->min_coordinates.y + bounding_box->max_coordinates.y) / 2, (bounding_box->min_coordinates.z + bounding_box->max_coordinates.z) / 2);
+	vec3 extents(bounding_box->max_coordinates.x - center.x, bounding_box->max_coordinates.y - center.y, bounding_box->max_coordinates.z - center.z);
+	
+	vc1 = vc1.subtract(center);
+	vc2 = vc2.subtract(center);
+	vc3 = vc3.subtract(center);
+
+
+
+	vec3 tri_edge1;
+	tri_edge1 = vc2.subtract(vc1);
+	vec3 tri_edge2;
+	tri_edge2 = vc3.subtract(vc2);
+	vec3 tri_edge3;
+	tri_edge3 = vc1.subtract(vc3);
+
+	
+
+	vec3 box_normal_x(1,0,0);
+	vec3 box_normal_y(0,1,0);
+	vec3 box_normal_z(0,0,1);
+
+	vec3 edge1_cross_bx, edge1_cross_by, edge1_cross_bz, edge2_cross_bx, edge2_cross_by, edge2_cross_bz, edge3_cross_bx, edge3_cross_by, edge3_cross_bz;
+
+	edge1_cross_bx = box_normal_x.cross(tri_edge1);
+	edge1_cross_by = box_normal_y.cross(tri_edge1);
+	edge1_cross_bz = box_normal_z.cross(tri_edge1);
+
+	edge2_cross_bx = box_normal_x.cross(tri_edge2);
+	edge2_cross_by = box_normal_y.cross(tri_edge2);
+	edge2_cross_bz = box_normal_z.cross(tri_edge2);
+
+	edge3_cross_bx = box_normal_x.cross(tri_edge3);
+	edge3_cross_by = box_normal_y.cross(tri_edge3);
+	edge3_cross_bz = box_normal_z.cross(tri_edge3);
+
+	if (!SAT_projection(edge1_cross_bx, center, extents, box_normal_x, box_normal_y, box_normal_z, vc1, vc2, vc3)) {
+		return false;
+	}
+	else if (!SAT_projection(edge1_cross_by, center, extents, box_normal_x, box_normal_y, box_normal_z, vc1, vc2, vc3)) {
+		return false;
+	}
+	else if (!SAT_projection(edge1_cross_bz, center, extents, box_normal_x, box_normal_y, box_normal_z, vc1, vc2, vc3)) {
+		return false;
+	}
+	else if (!SAT_projection(edge2_cross_bx, center, extents, box_normal_x, box_normal_y, box_normal_z, vc1, vc2, vc3)) {
+		return false;
+	}
+	else if (!SAT_projection(edge2_cross_by, center, extents, box_normal_x, box_normal_y, box_normal_z, vc1, vc2, vc3)) {
+		return false;
+	}
+	else if (!SAT_projection(edge2_cross_bz, center, extents, box_normal_x, box_normal_y, box_normal_z, vc1, vc2, vc3)) {
+		return false;
+	}
+	else if (!SAT_projection(edge3_cross_bx, center, extents, box_normal_x, box_normal_y, box_normal_z, vc1, vc2, vc3)) {
+		return false;
+	}
+	else if (!SAT_projection(edge3_cross_by, center, extents, box_normal_x, box_normal_y, box_normal_z, vc1, vc2, vc3)) {
+		return false;
+	}
+	else if (!SAT_projection(edge3_cross_bz, center, extents, box_normal_x, box_normal_y, box_normal_z, vc1, vc2, vc3)) {
+		return false;
+	}
+	else if (!SAT_projection(box_normal_x, center, extents, box_normal_x, box_normal_y, box_normal_z, vc1, vc2, vc3)) {
+		return false;
+	}
+	else if (!SAT_projection(box_normal_y, center, extents, box_normal_x, box_normal_y, box_normal_z, vc1, vc2, vc3)) {
+		return false;
+	}
+	else if (!SAT_projection(box_normal_z, center, extents, box_normal_x, box_normal_y, box_normal_z, vc1, vc2, vc3)) {
+		return false;
+	}
+	else if (!SAT_projection(this->n, center, extents, box_normal_x, box_normal_y, box_normal_z, vc1, vc2, vc3)) {
+		return false;
+	}
+	else {
+		return true;
+	}
+}
+
 tri::~tri() {
 
 }

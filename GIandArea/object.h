@@ -13,10 +13,12 @@
 #include <math.h>
 
 class ray;
+class AABB;
 #include "vec3.h"
 #include "material.h"
 #include "ray.h"
 #include "light.h"
+#include "AABB.h"
 
 class object {
  public:
@@ -24,6 +26,7 @@ class object {
   virtual bool shadowHit(ray *incoming_ray, light* target_light, double &distance) { std::cout << "wrong hit" << std::endl; return 0; };
   virtual vec3 getColor() { return vec3(0,0,0); };
   virtual vec3 getNormal(double x, double y, double z, int flat) { return vec3(0,0,0); };
+  virtual bool in_bounding_box(AABB *bounding_box) { return true; };
   material *mat;
   int objectID;
   int object_type;

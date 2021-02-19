@@ -27,6 +27,7 @@ class sphere : public object {
   bool shadowHit(ray *incoming_ray, light* target_light, double &distance);
   vec3 getColor();
   vec3 getNormal(double x, double y, double z, int flat);
+  bool in_bounding_box(AABB *bounding_box);
   ~sphere();
   double x, y, z, r;
   double c[3];

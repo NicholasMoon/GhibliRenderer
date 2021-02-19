@@ -19,6 +19,9 @@
 #include "ray.h"
 #include "light.h"
 
+double Max_Double(double a, double b, double c);
+double Min_Double(double a, double b, double c);
+
 class tri : public object {
  public:
   tri(vertex *v1, vertex *v2, vertex *v3, double c[3]);
@@ -28,6 +31,8 @@ class tri : public object {
   bool shadowHit(ray *incoming_ray, light* target_light, double &distance);
   vec3 getColor();
   vec3 getNormal(double x, double y, double z, int flat);
+  bool SAT_projection(vec3 &axis, vec3 &center, vec3 &extents, vec3 &box_normal_x, vec3 &box_normal_y, vec3 &box_normal_z, vec3 &vc1, vec3 &vc2, vec3 &vc3);
+  bool in_bounding_box(AABB *bounding_box);
   ~tri();
   vertex v1, v2, v3;
   vec3 n;
