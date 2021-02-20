@@ -144,6 +144,10 @@ return true;
 
 }
 
+void plane::updateWorldBoundaries(vec3 &min_coordinates, vec3 &max_coordinates) {
+
+}
+
 plane::~plane() {
 
 }

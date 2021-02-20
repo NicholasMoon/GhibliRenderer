@@ -24,11 +24,14 @@
 #include "sphere.h"
 #include "plane.h"
 #include "tri.h"
+#include "octreenode.h"
+#include "AABB.h"
 #include "particle.h"
 #include "painter.h"
 #include "style.h"
 #include "stroke.h"
 #include "brush.h"
+
 
 
 #define PI 3.14159265
@@ -41,6 +44,12 @@ double printProgress(int pixnum, int totalpixels, double milestone, time_t start
 	}
 	return milestone;
 	
+}
+
+void getWorldBoundaries(vec3 &min_coordinates, vec3 &max_coordinates, std::vector<object*> &objects) {
+	for (int i = 0; i < objects.size(); i++) {
+		objects[i]->updateWorldBoundaries(min_coordinates, max_coordinates);
+	}
 }
 
 double Max_Double(double a, double b, double c) {

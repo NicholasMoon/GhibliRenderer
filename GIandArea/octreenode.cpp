@@ -54,68 +54,8 @@ void OctreeNode::addChildNode (int position, std::vector<object*> &objects) {
 void OctreeNode::buildOctree(std::vector<object*> &objects) {
 	vec3 min_coordinates(-5, -5, -5);
 	vec3 max_coordinates(5, 5, 5);
-	/*for (int i = 0; i < objects.size(); i++) {
-		if (objects[i]->v1.x < min_coordinates.x) {
-			min_coordinates.x = objects[i]->v1.x;
-		}
-		if (objects[i]->v2.x < min_coordinates.x) {
-			min_coordinates.x = objects[i]->v2.x;
-		}
-		if (objects[i]->v3.x < min_coordinates.x) {
-			min_coordinates.x = objects[i]->v3.x;
-		}
 
-		if (objects[i]->v1.x > max_coordinates.x) {
-			max_coordinates.x = objects[i]->v1.x;
-		}
-		if (objects[i]->v2.x > max_coordinates.x) {
-			max_coordinates.x = objects[i]->v2.x;
-		}
-		if (objects[i]->v3.x > max_coordinates.x) {
-			max_coordinates.x = objects[i]->v3.x;
-		}
-		
-
-		if (objects[i]->v1.y < min_coordinates.y) {
-			min_coordinates.y = objects[i]->v1.y;
-		}
-		if (objects[i]->v2.y < min_coordinates.y) {
-			min_coordinates.y = objects[i]->v2.y;
-		}
-		if (objects[i]->v3.y < min_coordinates.y) {
-			min_coordinates.y = objects[i]->v3.y;
-		}
-
-		if (objects[i]->v1.y > max_coordinates.y) {
-			max_coordinates.y = objects[i]->v1.y;
-		}
-		if (objects[i]->v2.y > max_coordinates.y) {
-			max_coordinates.x = objects[i]->v2.x;
-		}
-		if (objects[i]->v3.y > max_coordinates.y) {
-			max_coordinates.y = objects[i]->v3.y;
-		}
-
-		if (objects[i]->v1.z < min_coordinates.z) {
-			min_coordinates.z = objects[i]->v1.z;
-		}
-		if (objects[i]->v2.z < min_coordinates.z) {
-			min_coordinates.z = objects[i]->v2.z;
-		}
-		if (objects[i]->v3.y < min_coordinates.y) {
-			min_coordinates.z = objects[i]->v3.y;
-		}
-
-		if (objects[i]->v1.z > max_coordinates.z) {
-			max_coordinates.z = objects[i]->v1.z;
-		}
-		if (objects[i]->v2.z > max_coordinates.z) {
-			max_coordinates.z = objects[i]->v2.z;
-		}
-		if (objects[i]->v3.z > max_coordinates.z) {
-			max_coordinates.z = objects[i]->v3.z;
-		}
-	}*/
+	getWorldBoundaries(min_coordinates, max_coordinates, objects);
 
 	AABB *scene_bounding_box = new AABB(min_coordinates.x, min_coordinates.y, min_coordinates.z, max_coordinates.x, max_coordinates.y, max_coordinates.z);
 	this->bounding_box = scene_bounding_box;

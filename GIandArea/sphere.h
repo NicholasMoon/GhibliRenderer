@@ -28,6 +28,7 @@ class sphere : public object {
   vec3 getColor();
   vec3 getNormal(double x, double y, double z, int flat);
   bool in_bounding_box(AABB *bounding_box);
+  void updateWorldBoundaries(vec3 &min_coordinates, vec3 &max_coordinates);
   ~sphere();
   double x, y, z, r;
   double c[3];

@@ -33,6 +33,7 @@ class tri : public object {
   vec3 getNormal(double x, double y, double z, int flat);
   bool SAT_projection(vec3 &axis, vec3 &center, vec3 &extents, vec3 &box_normal_x, vec3 &box_normal_y, vec3 &box_normal_z, vec3 &vc1, vec3 &vc2, vec3 &vc3);
   bool in_bounding_box(AABB *bounding_box);
+  void updateWorldBoundaries(vec3 &min_coordinates, vec3 &max_coordinates);
   ~tri();
   vertex v1, v2, v3;
   vec3 n;

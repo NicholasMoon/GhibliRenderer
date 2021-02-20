@@ -316,6 +316,64 @@ bool tri::in_bounding_box(AABB *bounding_box) {
 	}
 }
 
+void tri::updateWorldBoundaries(vec3 &min_coordinates, vec3 &max_coordinates) {
+	if (this->v1.xyz.x < min_coordinates.x) {
+		min_coordinates.x = this->v1.xyz.x;
+	}
+	if (this->v2.xyz.x < min_coordinates.x) {
+		min_coordinates.x = this->v2.xyz.x;
+	}
+	if (this->v3.xyz.x < min_coordinates.x) {
+		min_coordinates.x = this->v3.xyz.x;
+	}
+	if (this->v1.xyz.x > max_coordinates.x) {
+		max_coordinates.x = this->v1.xyz.x;
+	}
+	if (this->v2.xyz.x > max_coordinates.x) {
+		max_coordinates.x = this->v2.xyz.x;
+	}
+	if (this->v3.xyz.x > max_coordinates.x) {
+		max_coordinates.x = this->v3.xyz.x;
+	}
+	
+	if (this->v1.xyz.y < min_coordinates.y) {
+		min_coordinates.y = this->v1.xyz.y;
+	}
+	if (this->v2.xyz.y < min_coordinates.y) {
+		min_coordinates.y = this->v2.xyz.y;
+	}
+	if (this->v3.xyz.y < min_coordinates.y) {
+		min_coordinates.y = this->v3.xyz.y;
+	}
+	if (this->v1.xyz.y > max_coordinates.y) {
+		max_coordinates.y = this->v1.xyz.y;
+	}
+	if (this->v2.xyz.y > max_coordinates.y) {
+		max_coordinates.x = this->v2.xyz.x;
+	}
+	if (this->v3.xyz.y > max_coordinates.y) {
+		max_coordinates.y = this->v3.xyz.y;
+	}
+	if (this->v1.xyz.z < min_coordinates.z) {
+		min_coordinates.z = this->v1.xyz.z;
+	}
+	if (this->v2.xyz.z < min_coordinates.z) {
+		min_coordinates.z = this->v2.xyz.z;
+	}
+	if (this->v3.xyz.y < min_coordinates.y) {
+		min_coordinates.z = this->v3.xyz.y;
+	}
+	if (this->v1.xyz.z > max_coordinates.z) {
+		max_coordinates.z = this->v1.xyz.z;
+	}
+	if (this->v2.xyz.z > max_coordinates.z) {
+		max_coordinates.z = this->v2.xyz.z;
+	}
+	if (this->v3.xyz.z > max_coordinates.z) {
+		max_coordinates.z = this->v3.xyz.z;
+	}
+}
+
 tri::~tri() {
 
 }

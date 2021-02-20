@@ -108,6 +108,10 @@ return true;
 
 }
 
+void sphere::updateWorldBoundaries(vec3 &min_coordinates, vec3 &max_coordinates) {
+	
+}
+
 sphere::~sphere() {
 
 }

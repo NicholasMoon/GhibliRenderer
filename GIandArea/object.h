@@ -27,6 +27,7 @@ class object {
   virtual vec3 getColor() { return vec3(0,0,0); };
   virtual vec3 getNormal(double x, double y, double z, int flat) { return vec3(0,0,0); };
   virtual bool in_bounding_box(AABB *bounding_box) { return true; };
+  virtual void updateWorldBoundaries(vec3 &min_coordinates, vec3 &max_coordinates) { return; };
   material *mat;
   int objectID;
   int object_type;

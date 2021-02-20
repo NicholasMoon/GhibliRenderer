@@ -14,6 +14,8 @@
 
 
 class object;
+class vec3;
+void getWorldBoundaries(vec3 &min_coordinates, vec3 &max_coordinates, std::vector<object*> &objects);
 #include "vec3.h"
 #include "object.h"
 #include "light.h"
