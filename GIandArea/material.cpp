@@ -14,10 +14,10 @@ material::material() {
 	this->diffuse = diffuse;
 	this->ior = 0.0;
 	this->roughness = 0.0;
-
+	this->eccentricity = 0.0;
 }
 
-material::material(vec3 &shininess, vec3 &transparency, double ior, double roughness) {
+material::material(vec3 &shininess, vec3 &transparency, double ior, double roughness, double eccentricity) {
 	this->shininess = shininess;
 	this->transparency = transparency;
 	vec3 diffuse(0,0,0);
@@ -30,6 +30,7 @@ material::material(vec3 &shininess, vec3 &transparency, double ior, double rough
 	this->transparency.z = (1 - this->shininess.z) * this->transparency.z;
 	this->ior = ior;
 	this->roughness = roughness;
+	this->eccentricity = eccentricity;
 
 }
 

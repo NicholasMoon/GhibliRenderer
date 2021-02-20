@@ -24,6 +24,14 @@ vec3::vec3(const vec3 &v) {
   this->z = v.z;
 }
 
+vec3 vec3::subtract(const vec3 &v) {
+  vec3 result(0,0,0);
+  result.x = this->x - v.x;
+  result.y = this->y - v.y;
+  result.z = this->z - v.z;
+  return result;
+}
+
 double vec3::dot(vec3 &v) {
   return this->x * v.x + this->y * v.y + this->z * v.z;
 }

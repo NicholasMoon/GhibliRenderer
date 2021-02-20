@@ -19,13 +19,14 @@
 class material {
  public:
   material();
-  material(vec3 &shininess, vec3 &transparency, double ior, double roughness);
+  material(vec3 &shininess, vec3 &transparency, double ior, double roughness, double eccentricity);
   ~material();
   vec3 diffuse;
   vec3 shininess;
   vec3 transparency;
   double ior;
   double roughness;
+  double eccentricity;
  private:
   
 };

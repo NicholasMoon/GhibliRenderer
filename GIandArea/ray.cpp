@@ -31,7 +31,7 @@ bool ray::cast(std::vector<object*> &objects, std::vector<light*> &lights, doubl
 	if (x != -1 && y != -1 && primary_ray) {
 		depthMap[y * width + x] = distance;
 	}
-
+	int previous_obj_type = object_type;
 	object_type = objects[closestObject]->object_type;
   	std::normal_distribution<double> distribution(0, objects[closestObject]->mat->roughness);
 	double rand_x = distribution(generator);
@@ -191,28 +191,60 @@ bool ray::cast(std::vector<object*> &objects, std::vector<light*> &lights, doubl
 					normal.normalize();
 				}
 				double cosineNL = normal.x * directionToLight.x + normal.y * directionToLight.y + normal.z * directionToLight.z;
-				/*if (objects[closestObject]->object_type == 1) {
-					if (cosineNL < 0.000000000001) {
-						direct_diffuse_color[0] += objectColor.x * lights[i]->c[0] / 6.0;
-						direct_diffuse_color[1] += objectColor.y * lights[i]->c[1] / 6.0;
-						direct_diffuse_color[2] += objectColor.z * lights[i]->c[2] / 6.0;
+				if (objects[closestObject]->object_type == 1) {
+					if (std::abs(cosineNL * lights[i]->c[0]) < 0.0000000001) {
+						direct_diffuse_color[0] += objectColor.x / 6.0;
 					}
-					else if (cosineNL < 0.35) {
-						direct_diffuse_color[0] += objectColor.x * lights[i]->c[0] / 2.0;
-						direct_diffuse_color[1] += objectColor.y * lights[i]->c[1] / 2.0;
-						direct_diffuse_color[2] += objectColor.z * lights[i]->c[2] / 2.0;
+					else if (std::abs(cosineNL * lights[i]->c[0]) < 0.45) {
+						direct_diffuse_color[0] += objectColor.x / 2.0;
 					}
 					else{
-						direct_diffuse_color[0] += objectColor.x * lights[i]->c[0];
-						direct_diffuse_color[1] += objectColor.y * lights[i]->c[1];
-						direct_diffuse_color[2] += objectColor.z * lights[i]->c[2];
+						direct_diffuse_color[0] += objectColor.x;
+					}
+
+					if (std::abs(cosineNL * lights[i]->c[1]) < 0.0000000001) {
+						direct_diffuse_color[1] += objectColor.y / 6.0;
+					}
+					else if (std::abs(cosineNL * lights[i]->c[1]) < 0.45) {
+						direct_diffuse_color[1] += objectColor.y / 2.0;
+					}
+					else{
+						direct_diffuse_color[1] += objectColor.y;
+					}
+
+					if (std::abs(cosineNL * lights[i]->c[2]) < 0.0000000001) {
+						direct_diffuse_color[2] += objectColor.z / 6.0;
+					}
+					else if (std::abs(cosineNL * lights[i]->c[2]) < 0.45) {
+						direct_diffuse_color[2] += objectColor.z / 2.0;
+					}
+					else{
+						direct_diffuse_color[2] += objectColor.z;
 					}
 				}
-				else {*/
-					direct_diffuse_color[0] += (lights[i]->c[0] * cosineNL) / (distanceToLight * distanceToLight);
-					direct_diffuse_color[1] += (lights[i]->c[1] * cosineNL) / (distanceToLight * distanceToLight);
-					direct_diffuse_color[2] += (lights[i]->c[2] * cosineNL) / (distanceToLight * distanceToLight);
-				//}
+				else {
+					direct_diffuse_color[0] += (objectColor.x * lights[i]->c[0] * cosineNL) / (distanceToLight * distanceToLight);
+					direct_diffuse_color[1] += (objectColor.y * lights[i]->c[1] * cosineNL) / (distanceToLight * distanceToLight);
+					direct_diffuse_color[2] += (objectColor.z * lights[i]->c[2] * cosineNL) / (distanceToLight * distanceToLight);
+				}
+				if (objects[closestObject]->mat->eccentricity > 0) {
+					vec3 halfway(0,0,0);
+					halfway.x = -this->direction.x + directionToLight.x;
+					halfway.y = -this->direction.y + directionToLight.y;
+					halfway.z = -this->direction.z + directionToLight.z;
+					halfway.normalize();
+					double base_intensity = normal.dot(halfway);
+					double specular_intensity = pow(base_intensity, objects[closestObject]->mat->eccentricity);
+					double highlight_r = specular_intensity * lights[i]->c[0];
+					double highlight_g = specular_intensity * lights[i]->c[1];
+					double highlight_b = specular_intensity * lights[i]->c[2];
+					if (highlight_r > 0.1 || highlight_g > 0.1 || highlight_b > 0.1) {
+						direct_diffuse_color[0] += objectColor.x + 0.5;
+						direct_diffuse_color[1] += objectColor.y + 0.5;
+						direct_diffuse_color[2] += objectColor.z + 0.5;
+						object_type = previous_obj_type;
+					}
+				}
 				
 			}
 			else if (lights[i]->type == 3) { // area light
@@ -393,9 +425,11 @@ double ray::detect_edge(std::vector<object*> &objects, std::vector<light*> &ligh
 			closestObject = j;	
 		}
 	}
-	if (closestObject != -1) {
-		stencil_objID = objects[closestObject]->objectID;
+	if (closestObject < 0) {
+		stencil_objID = -1;
+		return distance;
 	}
+	stencil_objID = objects[closestObject]->objectID;
 	object_type = objects[closestObject]->object_type;
 	hit_list.push_back(objects[closestObject]->objectID);
 	std::normal_distribution<double> distribution(0, objects[closestObject]->mat->roughness);

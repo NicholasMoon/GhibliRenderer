@@ -17,6 +17,7 @@ class vec3 {
   vec3(double x, double y, double z);
   vec3();
   vec3(const vec3 &v);
+  vec3 subtract(const vec3 &v);
   double dot(vec3 &v);
   vec3 cross(vec3 &v);
   void normalize();

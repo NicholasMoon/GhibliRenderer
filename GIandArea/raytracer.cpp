@@ -43,7 +43,25 @@ double printProgress(int pixnum, int totalpixels, double milestone, time_t start
 	
 }
 
+double Max_Double(double a, double b, double c) {
+	if (a >= b && a >= c) {
+		return a;
+	}
+	else if (b >= a && b >= c) {
+		return b;
+	}
+	return c;
+}
 
+double Min_Double(double a, double b, double c) {
+	if (a <= b && a <= c) {
+		return a;
+	}
+	else if (b <= a && b <= c) {
+		return b;
+	}
+	return c;
+}
 
 double clip(double color) {
 	if (color < 0) {
@@ -125,6 +143,7 @@ int main(int argc, char** argv) {
 	double ior = 1.458;
 	int bounces = 4;
 	double roughness = 0;
+	double eccentricity = 0.0;
 	int v1, v2, v3, v4, v1n, v2n, v3n, v4n;
 	vertex *vert1, *vert2, *vert3, *vert4;
 	double lastNormal[3] = {0,0,0};
@@ -151,6 +170,7 @@ int main(int argc, char** argv) {
 	double stencil_rings = 0;
 	double outline_cutoff = 1;
 	int shoot = 1;
+	int spp = 1;
 	int output_depth = 0;
 	double e_slope = 1;
 	double stencil_radius = 0;
@@ -224,7 +244,7 @@ int main(int argc, char** argv) {
 			ss >> y;
 			ss >> z;
 			ss >> r;
-			material *m = new material(shininess, transparency, ior, roughness);
+			material *m = new material(shininess, transparency, ior, roughness, eccentricity);
 			object *s = new sphere(x, y, z, r, lastColor, m, objectID, object_type);
 			objects.push_back(s);
 		}
@@ -245,7 +265,7 @@ int main(int argc, char** argv) {
 			ss >> B;
 			ss >> C;
 			ss >> D;
-			material *m = new material(shininess, transparency, ior, roughness);
+			material *m = new material(shininess, transparency, ior, roughness, eccentricity);
 			object *p = new plane(A, B, C, D, lastColor, m, objectID);
 			objects.push_back(p);
 		}
@@ -411,7 +431,7 @@ int main(int argc, char** argv) {
 			vert1 = new vertex(vert1->xyz, *vert1n, vert1->color);
 			vert2 = new vertex(vert2->xyz, *vert2n, vert2->color);
 			vert3 = new vertex(vert3->xyz, *vert3n, vert3->color);
-			material *m = new material(shininess, transparency, ior, roughness);
+			material *m = new material(shininess, transparency, ior, roughness, eccentricity);
 			tri *t = new tri(vert1, vert2, vert3, lastColor, m, objectID, object_type);
 			objects.push_back(t);
 		}
@@ -476,6 +496,12 @@ int main(int argc, char** argv) {
 		}
 		else if (!token.compare("flat")) {
 			ss >> flat;
+		}
+		else if (!token.compare("eccentricity")) {
+			ss >> eccentricity;
+		}
+		else if (!token.compare("spp")) {
+			ss >> spp;
 		}
 		else {
 				//skip line
@@ -555,115 +581,153 @@ int main(int argc, char** argv) {
 		lightDyColor[1] = 0;
 		lightDyColor[2] = 0;
 		lightDyColor[3] = 0;
-		direction = cameraDirection(xi, yi, width, height, forward, right, up);
-		primary_ray = new ray(eye.x, eye.y, eye.z, direction.x, direction.y, direction.z);
-		int primary_objID = -1;
-		int objectType = 0;
-		std::vector<int> hit_list;
-		int shadowed = 0;
-		if (primary_ray->cast(objects, lights, resultColor, bounces, -1, generator, 1, xi, yi, width, depthMap, primary_objID, hit_normal, objectType, hit_list, shadowed, flat, light_samples, indirect_samples, indirect_bounces)) {
-			if (shadowed) {
-				shadowMap[yi * width + xi] = 1;
+		double AAColor[4];
+		AAColor[0] = 0;
+		AAColor[1] = 0;
+		AAColor[2] = 0;
+		AAColor[3] = 0;
+		int background_samples = 0;
+		int foreground_samples = 0;
+		for (int sample = 0; sample < spp; sample++) {
+			if (sample > 0) {
+				double rand_x = distribution(generator);
+				double rand_y = distribution(generator);
+				direction = cameraDirection(xi + rand_x, yi + rand_y, width, height, forward, right, up);
 			}
-
-			objectTypeMap[yi * width + xi] = objectType;
-			objectBoundaryMap[yi * width + xi] = hit_list.front();
-			objectIDMap[yi * width + xi] = primary_objID;
-			std::uniform_real_distribution<double> distributionTheta(0, 360);
-			int edge_rays = 0;
-			double step_size = stencil_radius / stencil_rings;
-			double radius = 0;
-			int test_num = 0;
-			for (double ring_radius = stencil_radius; ring_radius > 0; ring_radius -= stencil_rings) {
-				for (test_num = 0; test_num < stencil_ring_samples; test_num++) {
-					int edgeObjectType = 0;
-					radius += step_size;
-					double randTheta = distributionTheta(generator2);
-					double randx = radius * cos(randTheta * PI / 180);
-					double randy = radius * sin(randTheta * PI / 180);
-					vec3 newdir = cameraDirection(xi + randx, yi + randy, width, height, forward, right, up);
-					primary_ray->direction.x = newdir.x;
-					primary_ray->direction.y = newdir.y;
-					primary_ray->direction.z = newdir.z;
-					int stencil_objID = -1;
-					std::vector<int> edge_hit_list;
-					double edge_test = primary_ray->detect_edge(objects, lights, resultColor, bounces, -1, generator, stencil_objID, edgeObjectType, edge_hit_list);
-					primary_ray->direction.x = direction.x;
-					primary_ray->direction.y = direction.y;
-					primary_ray->direction.z = direction.z;
-					if (edge_hit_list[0] != hit_list[0]) {
-						edge_rays++;
-					}
-					else if (edgeObjectType == 0 && objectType == 0) {
-						continue;
-					}
-					else if (stencil_objID != primary_objID) {
-						edge_rays++;
-					}
-					else if (std::abs(edge_test - depthMap[yi * width + xi])  > outline_cutoff) {
-						edge_rays++;
+			else {
+				direction = cameraDirection(xi, yi, width, height, forward, right, up);
+			}
+			primary_ray = new ray(eye.x, eye.y, eye.z, direction.x, direction.y, direction.z);
+			int primary_objID = -1;
+			int objectType = 0;
+			std::vector<int> hit_list;
+			int shadowed = 0;
+			if (primary_ray->cast(objects, lights, resultColor, bounces, -1, generator, 1, xi, yi, width, depthMap, primary_objID, hit_normal, objectType, hit_list, shadowed, flat, light_samples, indirect_samples, indirect_bounces)) {
+				if (shadowed) {
+					shadowMap[yi * width + xi] = 1;
+				}
+				if (objectType == 1) {
+					foreground_samples++;
+				}
+				else {
+					background_samples++;
+				}
+				objectTypeMap[yi * width + xi] = objectType;
+				objectBoundaryMap[yi * width + xi] = hit_list.front();
+				objectIDMap[yi * width + xi] = primary_objID;
+				std::uniform_real_distribution<double> distributionTheta(0, 360);
+				int edge_rays = 0;
+				double step_size = stencil_radius / stencil_rings;
+				double radius = 0;
+				int test_num = 0;
+				resultColor[0] = 0;
+				resultColor[1] = 0;
+				resultColor[2] = 0;
+				resultColor[3] = 0;
+				for (double ring_radius = stencil_radius; ring_radius > 0; ring_radius -= stencil_rings) {
+					for (test_num = 0; test_num < stencil_ring_samples; test_num++) {
+						int edgeObjectType = 0;
+						radius += step_size;
+						double randTheta = distributionTheta(generator2);
+						double randx = radius * cos(randTheta * PI / 180);
+						double randy = radius * sin(randTheta * PI / 180);
+						vec3 newdir = cameraDirection(xi + randx, yi + randy, width, height, forward, right, up);
+						primary_ray->direction.x = newdir.x;
+						primary_ray->direction.y = newdir.y;
+						primary_ray->direction.z = newdir.z;
+						int stencil_objID = -1;
+						std::vector<int> edge_hit_list;
+						double edge_test = primary_ray->detect_edge(objects, lights, resultColor, bounces, -1, generator, stencil_objID, edgeObjectType, edge_hit_list);
+						primary_ray->direction.x = direction.x;
+						primary_ray->direction.y = direction.y;
+						primary_ray->direction.z = direction.z;
+						if (hit_list.size() == 0 && edge_hit_list.size() > 0) {
+							edge_rays++;
+						}
+						else if  (hit_list.size() == 0 && edge_hit_list.size() == 0) {
+							continue;
+						}
+						else if  (hit_list.size() > 0 && edge_hit_list.size() == 0) {
+							edge_rays++;
+						}
+						else if (edge_hit_list[0] != hit_list[0] && edge_hit_list.size() != hit_list.size()) {
+							edge_rays++;
+						}
+						else if (edgeObjectType == 0 && objectType == 0) {
+							continue;
+						}
+						else if (stencil_objID != primary_objID) {
+							edge_rays++;
+						}
+						else if (std::abs(edge_test - depthMap[yi * width + xi])  > outline_cutoff) {
+							edge_rays++;
+						}
 					}
 				}
+				double edge_strength = 1 - pow((std::abs(edge_rays - 0.5 * stencil_rings * stencil_ring_samples) / (0.5 * stencil_rings * stencil_ring_samples)),2);
+				//resultColor[0] = resultColor[0] * (1 - edge_strength);
+				//resultColor[1] = resultColor[1] * (1 - edge_strength);
+				//resultColor[2] = resultColor[2] * (1 - edge_strength);
+				edgeMap[yi * width + xi][0] = 1 - edge_strength;
+				edgeMap[yi * width + xi][1] = 1 - edge_strength;
+				edgeMap[yi * width + xi][2] = 1 - edge_strength;
+
+				if (objectType == 0) {
+					vec3 particle_color(resultColor[0], resultColor[1], resultColor[2]);
+					// auto paint_particle = std::make_shared<PaintParticle>(xi, yi, particle_color, primary_ray->direction, hit_normal, depthMap[yi * width + xi], 1, 1); // none are edges for now
+					// paint_particles.push_back(paint_particle);
+
+					// Get drawing gradient
+					light_dx_right.x = right.x * 0.001;
+					light_dx_right.y = right.y * 0.001;
+					light_dx_right.z = right.z * 0.001;
+					light_dy_up.x = up.x * 0.001;
+					light_dy_up.y = up.y * 0.001;
+					light_dy_up.z = up.z * 0.001;
+					// vec3 light_dx_dir = cameraDirection(xi, yi, width, height, forward, light_dx_right, up); // adjust right vector
+					// vec3 light_dy_dir = cameraDirection(xi, yi, width, height, forward, right, light_dy_up); // adjust up vector
+					light_dx_ray = new ray(eye.x, eye.y, eye.z, direction.x + light_dx_right.x, direction.y + light_dx_right.y, direction.z + light_dx_right.z);
+					light_dy_ray = new ray(eye.x, eye.y, eye.z, direction.x + light_dy_up.x, direction.y + light_dy_up.y, direction.z + light_dy_up.z);
+
+					int lightObjectType = 0;
+					int light_objID = -1;
+					std::vector<int> light_hit_list;
+					vec3 light_hit_normal(0,0,0);
+					light_dx_ray->cast(objects, lights, lightDxColor, bounces, -1, generator, 1, xi, yi, width, depthMap, light_objID, light_hit_normal, lightObjectType, light_hit_list, shadowed, flat, light_samples, indirect_samples, indirect_bounces);
+					light_dy_ray->cast(objects, lights, lightDyColor, bounces, -1, generator, 1, xi, yi, width, depthMap, light_objID, light_hit_normal, lightObjectType, light_hit_list, shadowed, flat, light_samples, indirect_samples, indirect_bounces);
+
+					delete light_dx_ray;
+					delete light_dy_ray;
+
+					getDrawingGradient(hit_normal, resultColor, lightDxColor, lightDyColor, stroke_gradient, pixnum);
+					double cosTheta = hit_normal.dot(primary_ray->direction);
+					bool inside = false;
+					if (cosTheta > 0) inside = true;
+					
+					// Make new stroke
+					paint_stroke = new stroke(xi, yi, particle_color, primary_ray->direction, hit_normal, depthMap[yi * width + xi]);
+					// Set these based on position and distance from camera
+					paint_stroke->set_length(strokeLengths[1]);
+					paint_stroke->set_curvature(0.8);
+					paint_stroke->create(stroke_gradient, inside, 0, 0, myImage.width(), myImage.height());
+
+					// Choose brush and paint
+					paint_brush = brushSet[1];
+					paint_brush->paint(paint_stroke, paintMap, objectTypeMap, objectBoundaryMap, objectIDMap, hit_list.front(), primary_objID, &myImage);
+					delete paint_stroke;
+				} 
+				AAColor[0] += resultColor[0];
+				AAColor[1] += resultColor[1];
+				AAColor[2] += resultColor[2];
+				AAColor[3] += resultColor[3];
+				delete primary_ray;
 			}
-			double edge_strength = 1 - pow((std::abs(edge_rays - 0.5 * stencil_rings * stencil_ring_samples) / (0.5 * stencil_rings * stencil_ring_samples)),2);
-			//resultColor[0] = resultColor[0] * (1 - edge_strength);
-			//resultColor[1] = resultColor[1] * (1 - edge_strength);
-			//resultColor[2] = resultColor[2] * (1 - edge_strength);
-			edgeMap[yi * width + xi][0] = 1 - edge_strength;
-			edgeMap[yi * width + xi][1] = 1 - edge_strength;
-			edgeMap[yi * width + xi][2] = 1 - edge_strength;
-
-			if (objectType == 0) {
-				vec3 particle_color(resultColor[0], resultColor[1], resultColor[2]);
-				// auto paint_particle = std::make_shared<PaintParticle>(xi, yi, particle_color, primary_ray->direction, hit_normal, depthMap[yi * width + xi], 1, 1); // none are edges for now
-				// paint_particles.push_back(paint_particle);
-
-				// Get drawing gradient
-				light_dx_right.x = right.x * 0.001;
-				light_dx_right.y = right.y * 0.001;
-				light_dx_right.z = right.z * 0.001;
-				light_dy_up.x = up.x * 0.001;
-				light_dy_up.y = up.y * 0.001;
-				light_dy_up.z = up.z * 0.001;
-				// vec3 light_dx_dir = cameraDirection(xi, yi, width, height, forward, light_dx_right, up); // adjust right vector
-				// vec3 light_dy_dir = cameraDirection(xi, yi, width, height, forward, right, light_dy_up); // adjust up vector
-				light_dx_ray = new ray(eye.x, eye.y, eye.z, direction.x + light_dx_right.x, direction.y + light_dx_right.y, direction.z + light_dx_right.z);
-				light_dy_ray = new ray(eye.x, eye.y, eye.z, direction.x + light_dy_up.x, direction.y + light_dy_up.y, direction.z + light_dy_up.z);
-
-				int lightObjectType = 0;
-				int light_objID = -1;
-				std::vector<int> light_hit_list;
-				vec3 light_hit_normal(0,0,0);
-				light_dx_ray->cast(objects, lights, lightDxColor, bounces, -1, generator, 1, xi, yi, width, depthMap, light_objID, light_hit_normal, lightObjectType, light_hit_list, shadowed, flat, light_samples, indirect_samples, indirect_bounces);
-				light_dy_ray->cast(objects, lights, lightDyColor, bounces, -1, generator, 1, xi, yi, width, depthMap, light_objID, light_hit_normal, lightObjectType, light_hit_list, shadowed, flat, light_samples, indirect_samples, indirect_bounces);
-
-				delete light_dx_ray;
-				delete light_dy_ray;
-
-				getDrawingGradient(hit_normal, resultColor, lightDxColor, lightDyColor, stroke_gradient, pixnum);
-				double cosTheta = hit_normal.dot(primary_ray->direction);
-				bool inside = false;
-				if (cosTheta > 0) inside = true;
-				
-				// Make new stroke
-                paint_stroke = new stroke(xi, yi, particle_color, primary_ray->direction, hit_normal, depthMap[yi * width + xi]);
-                // Set these based on position and distance from camera
-                paint_stroke->set_length(strokeLengths[1]);
-                paint_stroke->set_curvature(0.8);
-                paint_stroke->create(stroke_gradient, inside, 0, 0, myImage.width(), myImage.height());
-
-                // Choose brush and paint
-                paint_brush = brushSet[1];
-				paint_brush->paint(paint_stroke, paintMap, objectTypeMap, objectBoundaryMap, objectIDMap, hit_list.front(), primary_objID, &myImage);
-				delete paint_stroke;
-			} 
-			delete primary_ray;
-		}
-		if (objectType == 1) {
-			myImage(xi, yi, 0, 0) = clip(resultColor[0] * 255);
-			myImage(xi, yi, 0, 1) = clip(resultColor[1] * 255);
-			myImage(xi, yi, 0, 2) = clip(resultColor[2] * 255);
-			myImage(xi, yi, 0, 3) = clip(resultColor[3] * 255);
+			if (foreground_samples > background_samples) {
+				myImage(xi, yi, 0, 0) = clip((AAColor[0] / (double) spp) * 255);
+				myImage(xi, yi, 0, 1) = clip((AAColor[1] / (double) spp) * 255);
+				myImage(xi, yi, 0, 2) = clip((AAColor[2] / (double) spp) * 255);
+				myImage(xi, yi, 0, 3) = clip(AAColor[3] * 255);
+			}
 		}
 	}
 	
