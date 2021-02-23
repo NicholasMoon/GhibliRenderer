@@ -128,7 +128,7 @@ void getDrawingGradient(vec3 hit_normal, double *old_color, double *light_x_colo
     if (light_gradient.magnitude() != 0) light_gradient.normalize();
 
     // final_gradient = (edge_gradient * edge + light_gradient * light).normalize();
-	final_gradient = light_gradient;
+	final_gradient = edge_gradient;
 	// if (edge >= 0.6) {
     //     final_gradient = edge_gradient;
     // }
@@ -157,6 +157,7 @@ int main(int argc, char** argv) {
 	vertex *vert1, *vert2, *vert3, *vert4;
 	double lastNormal[3] = {0,0,0};
 	double lastColor[3] = {1, 1, 1};
+	double lastEmission[3] = {0, 0, 0};
 	double resultColor[4] = {0, 0, 0, 0};
 	double lightDxColor[4] = {0, 0, 0, 0};
 	double lightDyColor[4] = {0, 0, 0, 0};
@@ -254,7 +255,8 @@ int main(int argc, char** argv) {
 			ss >> z;
 			ss >> r;
 			material *m = new material(shininess, transparency, ior, roughness, eccentricity);
-			object *s = new sphere(x, y, z, r, lastColor, m, objectID, object_type);
+			// object *s = new sphere(x, y, z, r, lastColor, m, objectID, object_type);
+			object *s = new sphere(x, y, z, r, lastColor, lastEmission, m, objectID, object_type);
 			objects.push_back(s);
 		}
 		else if (!token.compare("sun")) {
@@ -268,6 +270,11 @@ int main(int argc, char** argv) {
 			ss >> lastColor[0];
 			ss >> lastColor[1];
 			ss >> lastColor[2];
+		}
+		else if (!token.compare("emission")) {
+			ss >> lastEmission[0];
+			ss >> lastEmission[1];
+			ss >> lastEmission[2];
 		}
 		else if (!token.compare("plane")) {
 			ss >> A;
@@ -441,7 +448,8 @@ int main(int argc, char** argv) {
 			vert2 = new vertex(vert2->xyz, *vert2n, vert2->color);
 			vert3 = new vertex(vert3->xyz, *vert3n, vert3->color);
 			material *m = new material(shininess, transparency, ior, roughness, eccentricity);
-			tri *t = new tri(vert1, vert2, vert3, lastColor, m, objectID, object_type);
+			// tri *t = new tri(vert1, vert2, vert3, lastColor, m, objectID, object_type);
+			tri *t = new tri(vert1, vert2, vert3, lastColor, lastEmission, m, objectID, object_type); 
 			objects.push_back(t);
 		}
 		else if (!token.compare("stencil_radius")) {
@@ -533,24 +541,6 @@ int main(int argc, char** argv) {
 		paintMap[pm] = 0;
 	}
 
-	// // Initialize stroke lengths (do this based on image resolution)
-    // int small_size = 1;
-    // int medium_size = 4;
-    // int large_size = 20;
-    // int strokeLengths[3] = {small_size, medium_size, large_size};
-
-    // // Initialize brush set
-    // auto const_brush_small = Brush(1, 1, &myImage);
-    // const_brush_small.create_mask();
-
-    // auto const_brush_medium = Brush(4, 1, &myImage);
-    // const_brush_medium.create_mask();
-
-    // auto const_brush_large = Brush(10, 1, &myImage);
-    // const_brush_large.create_mask();
-
-    // Brush brushSet[3] = {const_brush_small, const_brush_medium, const_brush_large};
-
 	// Randomize pixels
 	std::vector<int> x_values;
     std::vector<int> y_values;
@@ -574,8 +564,8 @@ int main(int argc, char** argv) {
 	int pixnum = 0;
 	int totalpixels = width * height;
 	for (std::tuple<int, int> curr_pixel : pixels) {
-        	int xi = std::get<0>(curr_pixel);
-        	int yi = std::get<1>(curr_pixel);
+        int xi = std::get<0>(curr_pixel);
+        int yi = std::get<1>(curr_pixel);
 		pixnum++;
 		milestone = printProgress(pixnum, totalpixels, milestone, start);
 		resultColor[0] = 0;
@@ -629,10 +619,10 @@ int main(int argc, char** argv) {
 				double step_size = stencil_radius / stencil_rings;
 				double radius = 0;
 				int test_num = 0;
-				resultColor[0] = 0;
-				resultColor[1] = 0;
-				resultColor[2] = 0;
-				resultColor[3] = 0;
+				// resultColor[0] = 0;
+				// resultColor[1] = 0;
+				// resultColor[2] = 0;
+				// resultColor[3] = 0;
 				for (double ring_radius = stencil_radius; ring_radius > 0; ring_radius -= stencil_rings) {
 					for (test_num = 0; test_num < stencil_ring_samples; test_num++) {
 						int edgeObjectType = 0;
@@ -729,6 +719,10 @@ int main(int argc, char** argv) {
 				AAColor[1] += resultColor[1];
 				AAColor[2] += resultColor[2];
 				AAColor[3] += resultColor[3];
+				resultColor[0] = 0;
+				resultColor[1] = 0;
+				resultColor[2] = 0;
+				resultColor[3] = 0;
 				delete primary_ray;
 			}
 			if (foreground_samples > background_samples) {
@@ -743,7 +737,7 @@ int main(int argc, char** argv) {
 	// auto painter = Painter(Expressionist(), paint_particles, &myImage);
     // painter.paint(objectTypeMap);
 
-	for (int yk = 0; yk < height; yk++) {
+	for (int yk = 0; yk < height; yk++) { 
 		for (int xk = 0; xk < width; xk++) {
 			if (shadowMap[yk * width + xk] && objectTypeMap[yk * width + xk] == 0) {
 				myImage(xk, yk, 0, 0) = clip(myImage(xk, yk, 0, 0) * .35);
@@ -753,7 +747,7 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	for (int yj = 0; yj < height; yj++) {
+	for (int yj = 0; yj < height; yj++) { // this affects emissive objects
 		for (int xj = 0; xj < width; xj++) {
 			myImage(xj, yj, 0, 0) = clip(myImage(xj, yj, 0, 0) * edgeMap[yj * width + xj][0]);
 			myImage(xj, yj, 0, 1) = clip(myImage(xj, yj, 0, 1) * edgeMap[yj * width + xj][1]);

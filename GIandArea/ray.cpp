@@ -52,6 +52,8 @@ bool ray::cast(std::vector<object*> &objects, std::vector<light*> &lights, doubl
 		normal.reverse();
 	}
 
+	vec3 objectEmission = objects[closestObject]->getEmission();
+
 	if ((objects[closestObject]->mat->shininess.x > 0 || objects[closestObject]->mat->shininess.y > 0 || objects[closestObject]->mat->shininess.z > 0) && bounces > 0) {
 		if (objects[closestObject]->mat->roughness > 0) {
 			normal.x += rand_x;
@@ -343,6 +345,7 @@ bool ray::cast(std::vector<object*> &objects, std::vector<light*> &lights, doubl
 			
 			indirect_diffuse_ray->cast(objects, lights, indirect_sample_color, bounces, -1, generator, 0, x, y, width, indirect_depth, indirect_objID, indirect_hit_normal, indirect_object_type, indirect_hit_list, indirect_shadowed, flat, light_samples, indirect_samples, indirect_bounces - 1);
 			double cosineNL = normal.x * new_dir.x + normal.y * new_dir.y + normal.z * new_dir.z;
+			cosineNL = std::abs(cosineNL);
 			indirect_diffuse_color[0] += indirect_sample_color[0] * cosineNL * 2 * PI;
 			indirect_diffuse_color[1] += indirect_sample_color[1] * cosineNL * 2 * PI;
 			indirect_diffuse_color[2] += indirect_sample_color[2] * cosineNL * 2 * PI;
@@ -365,44 +368,44 @@ bool ray::cast(std::vector<object*> &objects, std::vector<light*> &lights, doubl
 
 		// 0.05, 0.7 for area lights
 		if (r_channel < 0.1) {
-			diffuse_color[0] = (0.35) * objects[closestObject]->mat->diffuse.x * objectColor.x;
+			diffuse_color[0] = objectEmission.x + (0.35) * objects[closestObject]->mat->diffuse.x * objectColor.x;
 		}
 		else if (r_channel < 0.9) {
-			diffuse_color[0] = (0.7) * objects[closestObject]->mat->diffuse.x * objectColor.x;
+			diffuse_color[0] = objectEmission.x + (0.7) * objects[closestObject]->mat->diffuse.x * objectColor.x;
 		}
 		else {
-			diffuse_color[0] = objects[closestObject]->mat->diffuse.x * objectColor.x;
+			diffuse_color[0] = objectEmission.x + objects[closestObject]->mat->diffuse.x * objectColor.x;
 		}
 
 		if (g_channel < 0.1) {
-			diffuse_color[1] = (0.35) * objects[closestObject]->mat->diffuse.y * objectColor.y;
+			diffuse_color[1] = objectEmission.y + (0.35) * objects[closestObject]->mat->diffuse.y * objectColor.y;
 		}
 		else if (g_channel < 0.9) {
-			diffuse_color[1] = (0.7) * objects[closestObject]->mat->diffuse.y * objectColor.y;
+			diffuse_color[1] = objectEmission.y + (0.7) * objects[closestObject]->mat->diffuse.y * objectColor.y;
 		}
 		else {
-			diffuse_color[1] = objects[closestObject]->mat->diffuse.y * objectColor.y;
+			diffuse_color[1] = objectEmission.y + objects[closestObject]->mat->diffuse.y * objectColor.y;
 		}
 
 		if (b_channel < 0.1) {
-			diffuse_color[2] = (0.35) * objects[closestObject]->mat->diffuse.z * objectColor.z;
+			diffuse_color[2] = objectEmission.z + (0.35) * objects[closestObject]->mat->diffuse.z * objectColor.z;
 		}
 		else if (b_channel < 0.9) {
-			diffuse_color[2] = (0.7) * objects[closestObject]->mat->diffuse.z * objectColor.z;
+			diffuse_color[2] = objectEmission.z + (0.7) * objects[closestObject]->mat->diffuse.z * objectColor.z;
 		}
 		else {
-			diffuse_color[2] = objects[closestObject]->mat->diffuse.z * objectColor.z;
+			diffuse_color[2] = objectEmission.z + objects[closestObject]->mat->diffuse.z * objectColor.z;
 		}
 	}
 	else { 
-		diffuse_color[0] = (direct_diffuse_color[0] + indirect_diffuse_color[0]) * objects[closestObject]->mat->diffuse.x * objectColor.x;
-		diffuse_color[1] = (direct_diffuse_color[1] + indirect_diffuse_color[1]) * objects[closestObject]->mat->diffuse.y * objectColor.y;
-		diffuse_color[2] = (direct_diffuse_color[2] + indirect_diffuse_color[2]) * objects[closestObject]->mat->diffuse.z * objectColor.z;
+		diffuse_color[0] = objectEmission.x + (direct_diffuse_color[0] + indirect_diffuse_color[0]) * objects[closestObject]->mat->diffuse.x * objectColor.x;
+		diffuse_color[1] = objectEmission.y + (direct_diffuse_color[1] + indirect_diffuse_color[1]) * objects[closestObject]->mat->diffuse.y * objectColor.y;
+		diffuse_color[2] = objectEmission.z + (direct_diffuse_color[2] + indirect_diffuse_color[2]) * objects[closestObject]->mat->diffuse.z * objectColor.z;
 	}
 
-		color[0] += diffuse_color[0] + reflection_color[0] * objects[closestObject]->mat->shininess.x + refraction_color[0] * objects[closestObject]->mat->transparency.x;
-		color[1] += diffuse_color[1] + reflection_color[1] * objects[closestObject]->mat->shininess.y + refraction_color[1] * objects[closestObject]->mat->transparency.y;
-		color[2] += diffuse_color[2] + reflection_color[2] * objects[closestObject]->mat->shininess.z + refraction_color[2] * objects[closestObject]->mat->transparency.z;
+	color[0] += diffuse_color[0] + reflection_color[0] * objects[closestObject]->mat->shininess.x + refraction_color[0] * objects[closestObject]->mat->transparency.x;
+	color[1] += diffuse_color[1] + reflection_color[1] * objects[closestObject]->mat->shininess.y + refraction_color[1] * objects[closestObject]->mat->transparency.y;
+	color[2] += diffuse_color[2] + reflection_color[2] * objects[closestObject]->mat->shininess.z + refraction_color[2] * objects[closestObject]->mat->transparency.z;
 	color[3] += 1;
 	return true;
 }

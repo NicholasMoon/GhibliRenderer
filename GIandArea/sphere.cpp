@@ -41,6 +41,22 @@ sphere::sphere(double x, double y, double z, double r, double c[3], material *ma
   this->mat = mat;
 }
 
+sphere::sphere(double x, double y, double z, double r, double c[3], double e[3], material *mat, int objectID, int object_type) { // new addition
+  this->objectID = objectID;
+  this->object_type = object_type;
+  this->x = x;
+  this->y = y;
+  this->z = z;
+  this->r = r;
+  this->c[0] = c[0];
+  this->c[1] = c[1];
+  this->c[2] = c[2];
+  this->e[0] = e[0];
+  this->e[1] = e[1];
+  this->e[2] = e[2];
+  this->mat = mat;
+}
+
 bool sphere::hit(ray *incoming_ray, std::vector<object*> &objects, std::vector<light*> &lights, double color[4], double &distance) {
 	vec3 rayToCenter(this->x - incoming_ray->origin.x, this->y - incoming_ray->origin.y, this->z - incoming_ray->origin.z);
 	double centerDotDir = incoming_ray->direction.dot(rayToCenter);
@@ -95,6 +111,10 @@ bool sphere::shadowHit(ray *incoming_ray, light* target_light, double &distance)
 
 vec3 sphere::getColor() {
 	return vec3(c[0], c[1], c[2]);
+}
+
+vec3 sphere::getEmission() { 
+	return vec3(e[0], e[1], e[2]);
 }
 
 vec3 sphere::getNormal(double x, double y, double z, int flat) {
