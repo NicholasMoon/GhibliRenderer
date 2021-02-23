@@ -22,6 +22,7 @@ class AABB {
  public:
   AABB(double min_x, double min_y, double min_z, double max_x, double max_y, double max_z): min_coordinates(min_x, min_y, min_z), max_coordinates(max_x, max_y, max_z) { };
   bool intersect(ray *r);
+  vec3 getClosestPoint(vec3 point);
   vec3 min_coordinates;
   vec3 max_coordinates;
   ~AABB();

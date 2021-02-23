@@ -122,10 +122,17 @@ vec3 sphere::getNormal(double x, double y, double z, int flat) {
 }
 
 bool sphere::in_bounding_box(AABB *bounding_box) {
-	// seperating axis theorem
+	// Sphere-AABB collision -> gdbooks.gitbooks.io/3dcollisions/content/Chapter2/static_sphere_aabb.html
 
-return true;
+	vec3 sphereCenter(x, y, z);
+	vec3 closestPointOnBB = bounding_box->getClosestPoint(sphereCenter);
+	
+	vec3 differenceCenterPoint = sphereCenter.subtract(closestPointOnBB);
+	double distance = differenceCenterPoint.magnitude();
 
+	if (distance <= this->r) return true;
+
+	return false;
 }
 
 void sphere::updateWorldBoundaries(vec3 &min_coordinates, vec3 &max_coordinates) {

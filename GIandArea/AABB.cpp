@@ -57,6 +57,33 @@ bool AABB::intersect(ray *r) {
     return true;
 }
 
+vec3 AABB::getClosestPoint(vec3 point) {
+    vec3 closest_point(point.x, point.y, point.z);
+
+    if (closest_point.x < this->min_coordinates.x) {
+        closest_point.x = this->min_coordinates.x;
+    }
+    else if (closest_point.x > this->max_coordinates.x) {
+        closest_point.x = this->max_coordinates.x;
+    }
+
+    if (closest_point.y < this->min_coordinates.y) {
+        closest_point.y = this->min_coordinates.y;
+    }
+    else if (closest_point.y > this->max_coordinates.y) {
+        closest_point.y = this->max_coordinates.y;
+    }
+
+    if (closest_point.z < this->min_coordinates.z) {
+        closest_point.z = this->min_coordinates.z;
+    }
+    else if (closest_point.z > this->max_coordinates.z) {
+        closest_point.z = this->max_coordinates.z;
+    }
+
+    return closest_point;
+}
+
 AABB::~AABB() {
 
 }

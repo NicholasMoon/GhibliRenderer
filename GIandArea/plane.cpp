@@ -139,9 +139,21 @@ vec3 plane::getNormal(double x, double y, double z, int flat) {
 }
 
 bool plane::in_bounding_box(AABB *bounding_box) {
+	// Plane-AABB collision - gdbooks.gitbooks.io/3dcollisions/content/Chapter2/static_aabb_plane.html
 
-return true;
+	vec3 boxCenter(0, 0, 0);
+	boxCenter.x = (bounding_box->min_coordinates.x + bounding_box->max_coordinates.x) / 2;
+	boxCenter.y = (bounding_box->min_coordinates.y + bounding_box->max_coordinates.y) / 2;
+	boxCenter.z = (bounding_box->min_coordinates.z + bounding_box->max_coordinates.z) / 2;
 
+	vec3 positiveExtent = bounding_box->max_coordinates.subtract(boxCenter);
+
+	double halfLengthLine = std::abs(positiveExtent.x * this->n.x) + std::abs(positiveExtent.y * this->n.y) + std::abs(positiveExtent.z * this->n.z);
+	double distanceToPlane = std::abs(boxCenter.dot(this->n) + this->D);
+
+	if (distanceToPlane > halfLengthLine) return false;
+
+	return true;
 }
 
 void plane::updateWorldBoundaries(vec3 &min_coordinates, vec3 &max_coordinates) {
