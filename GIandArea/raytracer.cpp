@@ -601,6 +601,10 @@ int main(int argc, char** argv) {
 			int objectType = 0;
 			std::vector<int> hit_list;
 			int shadowed = 0;
+			resultColor[0] = 0;
+			resultColor[1] = 0;
+			resultColor[2] = 0;
+			resultColor[3] = 0;
 			if (primary_ray->cast(objects, lights, resultColor, bounces, -1, generator, 1, xi, yi, width, depthMap, primary_objID, hit_normal, objectType, hit_list, shadowed, flat, light_samples, indirect_samples, indirect_bounces)) {
 				if (shadowed) {
 					shadowMap[yi * width + xi] = 1;
@@ -619,10 +623,6 @@ int main(int argc, char** argv) {
 				double step_size = stencil_radius / stencil_rings;
 				double radius = 0;
 				int test_num = 0;
-				// resultColor[0] = 0;
-				// resultColor[1] = 0;
-				// resultColor[2] = 0;
-				// resultColor[3] = 0;
 				for (double ring_radius = stencil_radius; ring_radius > 0; ring_radius -= stencil_rings) {
 					for (test_num = 0; test_num < stencil_ring_samples; test_num++) {
 						int edgeObjectType = 0;
@@ -715,22 +715,18 @@ int main(int argc, char** argv) {
 					paint_brush->paint(paint_stroke, paintMap, objectTypeMap, objectBoundaryMap, objectIDMap, hit_list.front(), primary_objID, &myImage);
 					delete paint_stroke;
 				} 
-				AAColor[0] += resultColor[0];
-				AAColor[1] += resultColor[1];
-				AAColor[2] += resultColor[2];
-				AAColor[3] += resultColor[3];
-				resultColor[0] = 0;
-				resultColor[1] = 0;
-				resultColor[2] = 0;
-				resultColor[3] = 0;
-				delete primary_ray;
 			}
-			if (foreground_samples > background_samples) {
-				myImage(xi, yi, 0, 0) = clip((AAColor[0] / (double) spp) * 255);
-				myImage(xi, yi, 0, 1) = clip((AAColor[1] / (double) spp) * 255);
-				myImage(xi, yi, 0, 2) = clip((AAColor[2] / (double) spp) * 255);
-				myImage(xi, yi, 0, 3) = clip(AAColor[3] * 255);
-			}
+			AAColor[0] += resultColor[0];
+			AAColor[1] += resultColor[1];
+			AAColor[2] += resultColor[2];
+			AAColor[3] += resultColor[3];
+			delete primary_ray;
+		}
+		if (foreground_samples > background_samples) {
+			myImage(xi, yi, 0, 0) = clip((AAColor[0] / (double) spp) * 255);
+			myImage(xi, yi, 0, 1) = clip((AAColor[1] / (double) spp) * 255);
+			myImage(xi, yi, 0, 2) = clip((AAColor[2] / (double) spp) * 255);
+			myImage(xi, yi, 0, 3) = clip(AAColor[3] * 255);
 		}
 	}
 	
