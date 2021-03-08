@@ -23,9 +23,9 @@ void getWorldBoundaries(vec3 &min_coordinates, vec3 &max_coordinates, std::vecto
 class OctreeNode {
  public:
   OctreeNode();
-  OctreeNode(int num_obj_cutoff, int level, int position);
-  OctreeNode(AABB *bounding_box, int num_obj_cutoff, int level, int position);
-  void addChildNode(int position, std::vector<object*> &objects);
+  OctreeNode(int num_obj_cutoff, int level, int position, int num_objs, int max_depth);
+  OctreeNode(AABB *bounding_box, int num_obj_cutoff, int level, int position, int num_objs, int max_depth);
+  bool addChildren();
   void buildOctree(std::vector<object*> &objects);
   bool traverseOctree(ray *r, std::vector<std::vector<object*>> &objects);
   void getMinCoordinates(int position, vec3 &min_coordinates);
@@ -39,6 +39,8 @@ class OctreeNode {
   int num_obj_cutoff;
   int level;
   int position;
+  int num_objs;
+  int max_depth;
  private:
   
 };

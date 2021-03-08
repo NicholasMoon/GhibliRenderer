@@ -6,6 +6,7 @@ stencil_ring_samples 10
 outline_cutoff .1
 stencil_radius 0.25
 stencil_rings 1
+octree_box_limit_x8 12
 color 1 0 1
 g default
 objectID 0

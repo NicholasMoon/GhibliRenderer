@@ -36,6 +36,8 @@ tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3]) {
 	this->e3.x /= dot3;
 	this->e3.y /= dot3;
 	this->e3.z /= dot3;
+	
+	this->box_pointers = 0;
 }
 
 tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3], material *mat, int objectID) {
@@ -70,6 +72,8 @@ tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3], material *mat, int obj
 	this->e3.x /= dot3;
 	this->e3.y /= dot3;
 	this->e3.z /= dot3;
+
+	this->box_pointers = 0;
 }
 
 tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3], material *mat, int objectID, int object_type) {
@@ -105,6 +109,8 @@ tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3], material *mat, int obj
 	this->e3.x /= dot3;
 	this->e3.y /= dot3;
 	this->e3.z /= dot3;
+	
+	this->box_pointers = 0;
 }
 
 tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3], double e[3], material *mat, int objectID, int object_type) {
@@ -143,6 +149,8 @@ tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3], double e[3], material 
 	this->e3.x /= dot3;
 	this->e3.y /= dot3;
 	this->e3.z /= dot3;
+
+	this->box_pointers = 0;
 }
 
 bool tri::hit(ray *incoming_ray, std::vector<object*> &objects, std::vector<light*> &lights, double color[4], double &distance) {
@@ -175,11 +183,14 @@ bool tri::hit(ray *incoming_ray, std::vector<object*> &objects, std::vector<ligh
 	double b3 = x1.dot(this->e3);
 	double b1 = 1 - b2 - b3;
 
-	if (b1 < 0 || b2 < 0 || b3 < 0 || b1 > 1 || b2 > 1 || b3 > 1) {
+	if (b1 < -0.0000001 || b2 < -0.0000001 || b3 < -0.0000001 || b1 > 1.0000001 || b2 > 1.0000001 || b3 > 1.0000001) {
 		return false;
 	}
-
-	double distanceFromRay = hitPoint.magnitude();
+	double travelX = stepsToTake * incoming_ray->direction.x;
+	double travelY = stepsToTake * incoming_ray->direction.y;
+	double travelZ = stepsToTake * incoming_ray->direction.z;
+	vec3 travelPoint(travelX, travelY, travelZ);
+	double distanceFromRay = travelPoint.magnitude();
 	if (distanceFromRay >= distance) {
 		return false;
 	}
@@ -219,11 +230,15 @@ bool tri::shadowHit(ray *incoming_ray, light* target_light, double &distance) {
 	double b3 = x1.dot(this->e3);
 	double b1 = 1 - b2 - b3;
 	
-	if (b1 < 0 || b2 < 0 || b3 < 0 || b1 > 1 || b2 > 1 || b3 > 1) {
+	if (b1 < -0.0000001 || b2 < -0.0000001 || b3 < -0.0000001 || b1 > 1.0000001 || b2 > 1.0000001 || b3 > 1.0000001) {
 		return false;
 	}
 
-	double distanceFromRay = hitPoint.magnitude();
+	double travelX = stepsToTake * incoming_ray->direction.x;
+	double travelY = stepsToTake * incoming_ray->direction.y;
+	double travelZ = stepsToTake * incoming_ray->direction.z;
+	vec3 travelPoint(travelX, travelY, travelZ);
+	double distanceFromRay = travelPoint.magnitude();
 	if (distanceFromRay < 0.0000001) {
 		return false;
 	}
@@ -390,19 +405,20 @@ void tri::updateWorldBoundaries(vec3 &min_coordinates, vec3 &max_coordinates) {
 		max_coordinates.y = this->v1.xyz.y;
 	}
 	if (this->v2.xyz.y > max_coordinates.y) {
-		max_coordinates.x = this->v2.xyz.x;
+		max_coordinates.y = this->v2.xyz.y;
 	}
 	if (this->v3.xyz.y > max_coordinates.y) {
 		max_coordinates.y = this->v3.xyz.y;
 	}
+
 	if (this->v1.xyz.z < min_coordinates.z) {
 		min_coordinates.z = this->v1.xyz.z;
 	}
 	if (this->v2.xyz.z < min_coordinates.z) {
 		min_coordinates.z = this->v2.xyz.z;
 	}
-	if (this->v3.xyz.y < min_coordinates.y) {
-		min_coordinates.z = this->v3.xyz.y;
+	if (this->v3.xyz.z < min_coordinates.z) {
+		min_coordinates.z = this->v3.xyz.z;
 	}
 	if (this->v1.xyz.z > max_coordinates.z) {
 		max_coordinates.z = this->v1.xyz.z;

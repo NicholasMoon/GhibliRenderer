@@ -18,20 +18,22 @@ bool ray::cast(std::vector<light*> &lights, double color[4], int bounces, int la
 	std::vector<object*> objects;
 	std::vector<std::vector<object*>> objs;
 	octree->traverseOctree(this, objs);
+
 	for (int r = 0; r < objs.size(); r++) {
 		for (int e = 0; e < objs[r].size(); e++) {
 			objects.push_back(objs[r][e]);
 		}
 	}
+	int closestObjectID = -1;
 	for (int j = 0; j < objects.size(); j++) {
 		if (objects[j]->hit(this, objects, lights, color, distance)) {
-			closestObject = j;	
+			closestObject = j;
+			closestObjectID = objects[j]->objectID;	
 		}
 	}
-
 	if (closestObject == -1) {
 		// ray didn't hit any objects
-		color[3] = 0;
+		color[3] = 0;		
 		return false;
 	}
 	primary_objID = objects[closestObject]->objectID;
@@ -179,7 +181,7 @@ bool ray::cast(std::vector<light*> &lights, double color[4], int bounces, int la
 				vec3 directionToLight(lightCoordinate.x - hitPoint.x, lightCoordinate.y - hitPoint.y, lightCoordinate.z - hitPoint.z);
 				directionToLight.normalize();
 
-				light_ray = new ray(hitX, hitY, hitZ, directionToLight.x, directionToLight.y, directionToLight.z);
+				light_ray = new ray(hitX + (.0001) * directionToLight.x, hitY + (.0001) * directionToLight.y, hitZ + (.0001) * directionToLight.z, directionToLight.x, directionToLight.y, directionToLight.z);
 
 				std::vector<object*> lightobjects;
 				std::vector<std::vector<object*>> lightobjs;
@@ -189,8 +191,13 @@ bool ray::cast(std::vector<light*> &lights, double color[4], int bounces, int la
 						lightobjects.push_back(lightobjs[r][e]);
 					}
 				}
-
-				distanceToBlock = light_ray->castLight(lightobjects, lights[i], distanceToLight);
+				double cosineLN = normal.dot(light_ray->direction);
+				if (cosineLN <= 0) {
+					distanceToBlock = 0;
+				}
+				else {
+					distanceToBlock = light_ray->castLight(lightobjects, lights[i], distanceToLight);
+				}
 				delete light_ray;
 				vec3 objectColor = objects[closestObject]->getColor();
 				if (distanceToBlock < distanceToLight) {
@@ -203,6 +210,7 @@ bool ray::cast(std::vector<light*> &lights, double color[4], int bounces, int la
 					else {
 						shadowed = 1;
 					}
+					//continue;
 				}
 				if (objects[closestObject]->mat->roughness > 0) {
 					normal.x += rand_x;
@@ -379,10 +387,6 @@ bool ray::cast(std::vector<light*> &lights, double color[4], int bounces, int la
 	double b_channel = direct_diffuse_color[2] + indirect_diffuse_color[2];	
 
 	if (objects[closestObject]->object_type == 1) { 
-		
-		/*if (objects[closestObject]->objectID == 0) {
-			std::cout << r_channel << " " << g_channel << " " << b_channel << std::endl;
-		}*/
 
 		// 0.05, 0.7 for area lights
 		if (r_channel < 0.1) {

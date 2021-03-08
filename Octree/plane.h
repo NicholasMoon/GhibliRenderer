@@ -32,7 +32,6 @@ class plane : public object {
   double A, B, C, D;
   vec3 p;
   vec3 n;
-  double c[3];
  private:
   
 };

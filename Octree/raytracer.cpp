@@ -183,6 +183,7 @@ int main(int argc, char** argv) {
 	int spp = 1;
 	int output_depth = 0;
 	int octree_box_limit_x8 = 2;
+	int max_octree_depth = 5;
 	double e_slope = 1;
 	double stencil_radius = 0;
 	int light_samples = 1;
@@ -244,6 +245,11 @@ int main(int argc, char** argv) {
 
     brush *brushSet[3] = {const_brush_small, const_brush_medium, const_brush_large};
 	
+	 //for testing purposes (random color per tri)
+	/*std::uniform_real_distribution<double> color_distribution(0, 2);
+	std::default_random_engine color_generator;
+	color_generator.seed(time(NULL));*/
+
 	while (std::getline(inputFile, lineBuffer)) {
 		if (lineBuffer.empty()) {
 			continue;
@@ -450,6 +456,11 @@ int main(int argc, char** argv) {
 			vert3 = new vertex(vert3->xyz, *vert3n, vert3->color);
 			material *m = new material(shininess, transparency, ior, roughness, eccentricity);
 			// tri *t = new tri(vert1, vert2, vert3, lastColor, m, objectID, object_type);
+
+			// for testing purposes (random color per tri)
+			/*lastColor[0] = color_distribution(color_generator);
+			lastColor[1] = color_distribution(color_generator);
+			lastColor[2] = color_distribution(color_generator);*/
 			tri *t = new tri(vert1, vert2, vert3, lastColor, lastEmission, m, objectID, object_type); 
 			objects.push_back(t);
 		}
@@ -524,15 +535,18 @@ int main(int argc, char** argv) {
 		else if (!token.compare("octree_box_limit_x8")) {
 			ss >> octree_box_limit_x8;
 		}
+		else if (!token.compare("max_octree_depth")) {
+			ss >> max_octree_depth;
+		}
 		else {
 				//skip line
 		}
 	}
 
 	std::cout << objects.size() << std::endl;
-	OctreeNode *root_node = new OctreeNode(octree_box_limit_x8, 0, -1);
+	OctreeNode *root_node = new OctreeNode(octree_box_limit_x8, 0, -1, objects.size(), max_octree_depth);
 	root_node->buildOctree(objects);
-	root_node->printOctree();
+	//root_node->printOctree();
 
 	std::default_random_engine generator;
 	generator.seed(time(NULL));

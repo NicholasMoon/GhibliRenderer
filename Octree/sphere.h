@@ -33,7 +33,6 @@ class sphere : public object {
   void updateWorldBoundaries(vec3 &min_coordinates, vec3 &max_coordinates);
   ~sphere();
   double x, y, z, r;
-  double c[3];
   double e[3];
 
  private:

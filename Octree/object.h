@@ -32,6 +32,8 @@ class object {
   material *mat;
   int objectID;
   int object_type;
+  double c[3];
+  int box_pointers;
  private:
   
 };

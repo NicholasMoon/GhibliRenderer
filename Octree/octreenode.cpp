@@ -1,103 +1,86 @@
 // octreenode.cpp
 
 #include "octreenode.h"
-
-OctreeNode::OctreeNode(int num_obj_cutoff, int level, int position, int num_objs) {
+int numbig = 0;
+OctreeNode::OctreeNode(int num_obj_cutoff, int level, int position, int num_objs, int max_depth) {
 	this->num_obj_cutoff = num_obj_cutoff;
 	this->level = level;
 	this->position = position;
 	this->num_objs = num_objs;
+	this->max_depth = max_depth;
 }
 
-OctreeNode::OctreeNode(AABB *bounding_box, int num_obj_cutoff, int level, int position, int num_objs) {
+OctreeNode::OctreeNode(AABB *bounding_box, int num_obj_cutoff, int level, int position, int num_objs, int max_depth) {
 	this->bounding_box = bounding_box;
 	this->num_obj_cutoff = num_obj_cutoff;
 	this->level = level;
 	this->position = position;
 	this->num_objs = num_objs;
+	this->max_depth = max_depth;
 }
 
-void OctreeNode::addChildNode (int position, std::vector<object*> &objects) {
-	vec3 child_min_coordinates(0,0,0);
-	getMinCoordinates(position, child_min_coordinates);
-
-	vec3 child_max_coordinates(0,0,0);
-	getMaxCoordinates(position, child_max_coordinates);
-	//std::cout << child_min_coordinates.x << " " << child_min_coordinates.y << " " << child_min_coordinates.z << " " << child_max_coordinates.x << " " << child_max_coordinates.y << " " << child_max_coordinates.z << std::endl;
-
-	AABB *child_bounding_box = new AABB(child_min_coordinates.x, child_min_coordinates.y, child_min_coordinates.z, child_max_coordinates.x, child_max_coordinates.y, child_max_coordinates.z);
-	std::vector<object*> children_objects;
-	int num_objects_in_box = 0;
-	for (int i = 0; i < objects.size(); i++) {
-		if (objects[i]->in_bounding_box(child_bounding_box)) {
-			//std::cout << "object " << i << " is in box " << position << std::endl;
-			num_objects_in_box++;
-			children_objects.push_back(objects[i]);
-		}
+bool OctreeNode::addChildren() {
+	if (this->level > max_depth || this->node_objects.size() < num_obj_cutoff) {
+		return false;
 	}
 
-	if (this->level > this->num_objs / this->num_obj_cutoff) {
-		delete child_bounding_box;
-		for (int i = 0; i < children_objects.size(); i++) {
-			this->node_objects.push_back(children_objects[i]);
+	for (int child_number = 0; child_number < 8; child_number++) {
+		vec3 child_min_coordinates(0,0,0);
+		getMinCoordinates(child_number, child_min_coordinates);
+
+		vec3 child_max_coordinates(0,0,0);
+		getMaxCoordinates(child_number, child_max_coordinates);
+
+		AABB *child_bounding_box = new AABB(child_min_coordinates.x, child_min_coordinates.y, child_min_coordinates.z, child_max_coordinates.x, child_max_coordinates.y, child_max_coordinates.z);
+		OctreeNode *child = new OctreeNode(child_bounding_box, this->num_obj_cutoff, this->level + 1, child_number, this->num_objs, this->max_depth);
+		for (int i = 0; i < this->node_objects.size(); i++) {
+			if (this->node_objects[i]->in_bounding_box(child_bounding_box)) {
+				child->node_objects.push_back(this->node_objects[i]);
+			}
 		}
+		this->children[child_number] = child;
+		this->child_valid[child_number] = 1;
 	}
-	else if (num_objects_in_box > this->num_obj_cutoff) {
-		//std::cout << "Making New Box!" << std::endl;
-		OctreeNode *child = new OctreeNode(child_bounding_box, this->num_obj_cutoff, this->level + 1, position, this->num_objs);
-		for (int i = 0; i < 8; i++) {
-			child->addChildNode(i, children_objects);
-		}
-		this->children[position] = child;
-		this->child_valid[position] = 1;
+	this->node_objects.clear();
+	for (int j = 0; j < 8; j++) {
+		this->children[j]->addChildren();
 	}
-	else {
-		//std::cout << "Not enough for new box!" << std::endl;
-		delete child_bounding_box;
-		for (int i = 0; i < children_objects.size(); i++) {
-			this->node_objects.push_back(children_objects[i]);
-		}
-	}
+	return true;
 }
 
 void OctreeNode::buildOctree(std::vector<object*> &objects) {
-double max_distance = std::numeric_limits<double>::max();
-double min_distance = std::numeric_limits<double>::min();
+	double max_distance = std::numeric_limits<double>::max();
+	double min_distance = -max_distance;
 	vec3 min_coordinates(max_distance,max_distance,max_distance);
 	vec3 max_coordinates(min_distance,min_distance,min_distance);
 
 	getWorldBoundaries(min_coordinates, max_coordinates, objects);
 	AABB *scene_bounding_box = new AABB(min_coordinates.x, min_coordinates.y, min_coordinates.z, max_coordinates.x, max_coordinates.y, max_coordinates.z);
-	scene_bounding_box->PrintAABB();
 	fflush(stdout);
 	this->bounding_box = scene_bounding_box;
-	for (int i = 0; i < 8; i++) {
-		addChildNode(i, objects);
+	for (int j = 0; j < objects.size(); j++) {
+		this->node_objects.push_back(objects[j]);
 	}
-
+	addChildren();
 }
 
 bool OctreeNode::traverseOctree(ray *r, std::vector<std::vector<object*>> &objects) {
 	int valid_children = 0;
-	int hit_children = 0;
-	//this->bounding_box->PrintAABB();
 	if (this->bounding_box->intersect(r)) {
+		if (this->node_objects.size() > 0) {
+			objects.push_back(this->node_objects);
+			return true;
+		}
+		for (int k = 0; k < 8; k++) {
+			valid_children += child_valid[k];
+		}
+		if (valid_children == 0 && objects.size() == 0) {
+			return true;
+		}
 		for (int i = 0; i < 8; i++) {
 			if (child_valid[i]) {
-				valid_children++;
-				if (children[i]->traverseOctree(r, objects)) {
-					hit_children++;
-					if (hit_children >= 4) {
-						break;
-					}
-				}
+				children[i]->traverseOctree(r, objects);
 			}
-		}
-		if (valid_children == 0) {
-			objects.push_back(this->node_objects);
-		}
-		else if (hit_children == 0) {
-			objects.push_back(this->node_objects);
 		}
 		return true;
 	}

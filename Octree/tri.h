@@ -42,7 +42,6 @@ class tri : public object {
   vec3 edge1, edge2;
   vec3 e2, e3;
   vec3 barycentric;
-  double c[3];
   double e[3];
  private:
   
