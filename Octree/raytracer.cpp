@@ -161,6 +161,7 @@ int main(int argc, char** argv) {
 	double resultColor[4] = {0, 0, 0, 0};
 	double lightDxColor[4] = {0, 0, 0, 0};
 	double lightDyColor[4] = {0, 0, 0, 0};
+	double environmentColor[4] = {0, 0, 0, 0};
 	double sx, sy = 0;
 	vec3 eye(0,0,0);
 	vec3 forward(0,0,-1);
@@ -190,6 +191,7 @@ int main(int argc, char** argv) {
 	int indirect_samples = 0;
 	int indirect_bounces = 0;
 	int flat = 0;
+	int environment = 0;
 	std::string v1parts = "";
 	std::string v2parts = "";
 	std::string v3parts = "";
@@ -532,6 +534,13 @@ int main(int argc, char** argv) {
 		else if (!token.compare("spp")) {
 			ss >> spp;
 		}
+		else if (!token.compare("environment")) {
+			ss >> environmentColor[0];
+			ss >> environmentColor[1];
+			ss >> environmentColor[2];
+			ss >> environmentColor[3];
+			environment = 1;
+		}
 		else if (!token.compare("octree_box_limit_x8")) {
 			ss >> octree_box_limit_x8;
 		}
@@ -631,7 +640,7 @@ int main(int argc, char** argv) {
 			resultColor[1] = 0;
 			resultColor[2] = 0;
 			resultColor[3] = 0;
-			if (primary_ray->cast(lights, resultColor, bounces, -1, generator, 1, xi, yi, width, depthMap, primary_objID, hit_normal, objectType, hit_list, shadowed, flat, light_samples, indirect_samples, indirect_bounces, root_node)) {
+			if (primary_ray->cast(lights, resultColor, environmentColor, bounces, -1, generator, 1, xi, yi, width, depthMap, primary_objID, hit_normal, objectType, hit_list, shadowed, flat, environment, light_samples, indirect_samples, indirect_bounces, root_node)) {
 				if (shadowed) {
 					shadowMap[yi * width + xi] = 1;
 				}
@@ -721,8 +730,8 @@ int main(int argc, char** argv) {
 					int light_objID = -1;
 					std::vector<int> light_hit_list;
 					vec3 light_hit_normal(0,0,0);
-					light_dx_ray->cast(lights, lightDxColor, bounces, -1, generator, 1, xi, yi, width, depthMap, light_objID, light_hit_normal, lightObjectType, light_hit_list, shadowed, flat, light_samples, indirect_samples, indirect_bounces, root_node);
-					light_dy_ray->cast(lights, lightDyColor, bounces, -1, generator, 1, xi, yi, width, depthMap, light_objID, light_hit_normal, lightObjectType, light_hit_list, shadowed, flat, light_samples, indirect_samples, indirect_bounces, root_node);
+					light_dx_ray->cast(lights, lightDxColor, environmentColor, bounces, -1, generator, 1, xi, yi, width, depthMap, light_objID, light_hit_normal, lightObjectType, light_hit_list, shadowed, flat, environment, light_samples, indirect_samples, indirect_bounces, root_node);
+					light_dy_ray->cast(lights, lightDyColor, environmentColor, bounces, -1, generator, 1, xi, yi, width, depthMap, light_objID, light_hit_normal, lightObjectType, light_hit_list, shadowed, flat, environment, light_samples, indirect_samples, indirect_bounces, root_node);
 
 					delete light_dx_ray;
 					delete light_dy_ray;
@@ -745,13 +754,18 @@ int main(int argc, char** argv) {
 					delete paint_stroke;
 				} 
 			}
+			else {
+				edgeMap[yi * width + xi][0] = 1;
+				edgeMap[yi * width + xi][1] = 1;
+				edgeMap[yi * width + xi][2] = 1;
+			}
 			AAColor[0] += resultColor[0];
 			AAColor[1] += resultColor[1];
 			AAColor[2] += resultColor[2];
 			AAColor[3] += resultColor[3];
 			delete primary_ray;
 		}
-		if (foreground_samples > background_samples) {
+		if (foreground_samples > background_samples || environment) {
 			myImage(xi, yi, 0, 0) = clip((AAColor[0] / (double) spp) * 255);
 			myImage(xi, yi, 0, 1) = clip((AAColor[1] / (double) spp) * 255);
 			myImage(xi, yi, 0, 2) = clip((AAColor[2] / (double) spp) * 255);
@@ -772,7 +786,7 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	for (int yj = 0; yj < height; yj++) { // this affects emissive objects
+	for (int yj = 0; yj < height; yj++) { 
 		for (int xj = 0; xj < width; xj++) {
 			myImage(xj, yj, 0, 0) = clip(myImage(xj, yj, 0, 0) * edgeMap[yj * width + xj][0]);
 			myImage(xj, yj, 0, 1) = clip(myImage(xj, yj, 0, 1) * edgeMap[yj * width + xj][1]);

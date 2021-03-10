@@ -7,7 +7,7 @@
 
 #define PI 3.14159265
 
-bool ray::cast(std::vector<light*> &lights, double color[4], int bounces, int lastObject, std::default_random_engine &generator, int primary_ray, int x, int y, int width, double *depthMap, int &primary_objID, vec3 &hit_normal, int &object_type, std::vector<int> &hit_list, int &shadowed, int flat, int light_samples, int indirect_samples, int indirect_bounces, OctreeNode *octree) {
+bool ray::cast(std::vector<light*> &lights, double color[4], double environmentColor[4], int bounces, int lastObject, std::default_random_engine &generator, int primary_ray, int x, int y, int width, double *depthMap, int &primary_objID, vec3 &hit_normal, int &object_type, std::vector<int> &hit_list, int &shadowed, int flat, int environment, int light_samples, int indirect_samples, int indirect_bounces, OctreeNode *octree) {
 	double distance = std::numeric_limits<double>::max();
 	int closestObject = -1;
 	double direct_diffuse_color[3] = {0,0,0};
@@ -33,7 +33,24 @@ bool ray::cast(std::vector<light*> &lights, double color[4], int bounces, int la
 	}
 	if (closestObject == -1) {
 		// ray didn't hit any objects
-		color[3] = 0;		
+		if (environment) {
+			if (environmentColor[3] == 1) { // gradient - color to white
+				double t = 0.5 * (this->direction.y + 1.0);
+				color[0] = (1.0 - t) * 1.0 + t * environmentColor[0];
+				color[1] = (1.0 - t) * 1.0 + t * environmentColor[1];
+				color[2] = (1.0 - t) * 1.0 + t * environmentColor[2];
+				color[3] = 1;
+			}
+			else if (environmentColor[3] == 0) { // solid color
+				color[0] = environmentColor[0];
+				color[1] = environmentColor[1];
+				color[2] = environmentColor[2];
+				color[3] = 1;
+			}	
+		}
+		else {
+			color[3] = 0;
+		}	
 		return false;
 	}
 	primary_objID = objects[closestObject]->objectID;
@@ -76,7 +93,7 @@ bool ray::cast(std::vector<light*> &lights, double color[4], int bounces, int la
 		double reflect_dir_y = this->direction.y - 2 * (n_dot_i) * normal.y;
 		double reflect_dir_z = this->direction.z - 2 * (n_dot_i) * normal.z;
 		ray *reflect_ray = new ray(hitX, hitY, hitZ, reflect_dir_x, reflect_dir_y, reflect_dir_z);
-		reflect_ray->cast(lights, reflection_color, bounces - 1, -1, generator, primary_ray, x, y, width, depthMap, primary_objID, hit_normal, object_type, hit_list, shadowed, flat, light_samples, indirect_samples, indirect_bounces, octree);
+		reflect_ray->cast(lights, reflection_color, environmentColor, bounces - 1, -1, generator, primary_ray, x, y, width, depthMap, primary_objID, hit_normal, object_type, hit_list, shadowed, flat, environment, light_samples, indirect_samples, indirect_bounces, octree);
 		delete reflect_ray;
 	}
 	if ((objects[closestObject]->mat->transparency.x > 0 || objects[closestObject]->mat->transparency.y > 0 || objects[closestObject]->mat->transparency.z > 0) && bounces > 0) {
@@ -113,7 +130,7 @@ bool ray::cast(std::vector<light*> &lights, double color[4], int bounces, int la
 			refract_dir_y = this->direction.y - 2 * (n_dot_i) * normal.y;
 			refract_dir_z = this->direction.z - 2 * (n_dot_i) * normal.z;
 			ray *refract_ray = new ray(hitX, hitY, hitZ, refract_dir_x, refract_dir_y, refract_dir_z);
-			refract_ray->cast(lights, refraction_color, bounces - 1, -1, generator, primary_ray, -1, -1, width, depthMap, primary_objID, hit_normal, object_type, hit_list, shadowed, flat, light_samples, indirect_samples, indirect_bounces, octree);
+			refract_ray->cast(lights, refraction_color, environmentColor, bounces - 1, -1, generator, primary_ray, -1, -1, width, depthMap, primary_objID, hit_normal, object_type, hit_list, shadowed, flat, environment, light_samples, indirect_samples, indirect_bounces, octree);
 			delete refract_ray;
 		}
 		else {
@@ -121,7 +138,7 @@ bool ray::cast(std::vector<light*> &lights, double color[4], int bounces, int la
 			refract_dir_y = ior * this->direction.y + (ior * n_dot_i - sqrt(k)) * normal.y;
 			refract_dir_z = ior * this->direction.z + (ior * n_dot_i - sqrt(k)) * normal.z;
 			ray *refract_ray = new ray(hitX + (.0001) * refract_dir_x, hitY + (.0001) * refract_dir_y, hitZ + (.0001) * refract_dir_z, refract_dir_x, refract_dir_y, refract_dir_z);
-			refract_ray->cast(lights, refraction_color, bounces - 1, closestObject, generator, primary_ray, -1, -1, width, depthMap, primary_objID, hit_normal, object_type, hit_list, shadowed, flat, light_samples, indirect_samples, indirect_bounces, octree);
+			refract_ray->cast(lights, refraction_color, environmentColor, bounces - 1, closestObject, generator, primary_ray, -1, -1, width, depthMap, primary_objID, hit_normal, object_type, hit_list, shadowed, flat, environment, light_samples, indirect_samples, indirect_bounces, octree);
 			delete refract_ray;
 		}
 	}
@@ -376,7 +393,7 @@ bool ray::cast(std::vector<light*> &lights, double color[4], int bounces, int la
 			int indirect_objID = 0;
 			double indirect_depth[1];
 			
-			indirect_diffuse_ray->cast(lights, indirect_sample_color, bounces, -1, generator, 0, x, y, width, indirect_depth, indirect_objID, indirect_hit_normal, indirect_object_type, indirect_hit_list, indirect_shadowed, flat, light_samples, indirect_samples, indirect_bounces - 1, octree);
+			indirect_diffuse_ray->cast(lights, indirect_sample_color, environmentColor, bounces, -1, generator, 0, x, y, width, indirect_depth, indirect_objID, indirect_hit_normal, indirect_object_type, indirect_hit_list, indirect_shadowed, flat, environment, light_samples, indirect_samples, indirect_bounces - 1, octree);
 			double cosineNL = normal.x * new_dir.x + normal.y * new_dir.y + normal.z * new_dir.z;
 			cosineNL = std::abs(cosineNL);
 			indirect_diffuse_color[0] += indirect_sample_color[0] * cosineNL * 2 * PI;
