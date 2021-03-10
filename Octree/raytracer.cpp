@@ -649,44 +649,46 @@ int main(int argc, char** argv) {
 				double step_size = stencil_radius / stencil_rings;
 				double radius = 0;
 				int test_num = 0;
-				for (double ring_radius = stencil_radius; ring_radius > 0; ring_radius -= stencil_rings) {
-					for (test_num = 0; test_num < stencil_ring_samples; test_num++) {
-						//continue;
-						int edgeObjectType = 0;
-						radius += step_size;
-						double randTheta = distributionTheta(generator2);
-						double randx = radius * cos(randTheta * PI / 180);
-						double randy = radius * sin(randTheta * PI / 180);
-						vec3 newdir = cameraDirection(xi + randx, yi + randy, width, height, forward, right, up);
-						primary_ray->direction.x = newdir.x;
-						primary_ray->direction.y = newdir.y;
-						primary_ray->direction.z = newdir.z;
-						int stencil_objID = -1;
-						std::vector<int> edge_hit_list;
-						double edge_test = primary_ray->detect_edge(lights, resultColor, bounces, -1, generator, stencil_objID, edgeObjectType, edge_hit_list, root_node);
-						primary_ray->direction.x = direction.x;
-						primary_ray->direction.y = direction.y;
-						primary_ray->direction.z = direction.z;
-						if (hit_list.size() == 0 && edge_hit_list.size() > 0) {
-							edge_rays++;
-						}
-						else if  (hit_list.size() == 0 && edge_hit_list.size() == 0) {
-							continue;
-						}
-						else if  (hit_list.size() > 0 && edge_hit_list.size() == 0) {
-							edge_rays++;
-						}
-						else if (edge_hit_list[0] != hit_list[0] && edge_hit_list.size() != hit_list.size()) {
-							edge_rays++;
-						}
-						else if (edgeObjectType == 0 && objectType == 0) {
-							continue;
-						}
-						else if (stencil_objID != primary_objID) {
-							edge_rays++;
-						}
-						else if (std::abs(edge_test - depthMap[yi * width + xi])  > outline_cutoff) {
-							edge_rays++;
+				if (objectType == 1) {
+					for (double ring_radius = stencil_radius; ring_radius > 0; ring_radius -= stencil_rings) {
+						for (test_num = 0; test_num < stencil_ring_samples; test_num++) {
+							//continue;
+							int edgeObjectType = 0;
+							radius += step_size;
+							double randTheta = distributionTheta(generator2);
+							double randx = radius * cos(randTheta * PI / 180);
+							double randy = radius * sin(randTheta * PI / 180);
+							vec3 newdir = cameraDirection(xi + randx, yi + randy, width, height, forward, right, up);
+							primary_ray->direction.x = newdir.x;
+							primary_ray->direction.y = newdir.y;
+							primary_ray->direction.z = newdir.z;
+							int stencil_objID = -1;
+							std::vector<int> edge_hit_list;
+							double edge_test = primary_ray->detect_edge(lights, resultColor, bounces, -1, generator, stencil_objID, edgeObjectType, edge_hit_list, root_node);
+							primary_ray->direction.x = direction.x;
+							primary_ray->direction.y = direction.y;
+							primary_ray->direction.z = direction.z;
+							if (hit_list.size() == 0 && edge_hit_list.size() > 0) {
+								edge_rays++;
+							}
+							else if  (hit_list.size() == 0 && edge_hit_list.size() == 0) {
+								continue;
+							}
+							else if  (hit_list.size() > 0 && edge_hit_list.size() == 0) {
+								edge_rays++;
+							}
+							else if (edge_hit_list[0] != hit_list[0] && edge_hit_list.size() != hit_list.size()) {
+								edge_rays++;
+							}
+							else if (edgeObjectType == 0 && objectType == 0) {
+								continue;
+							}
+							else if (stencil_objID != primary_objID) {
+								edge_rays++;
+							}
+							else if (std::abs(edge_test - depthMap[yi * width + xi])  > outline_cutoff) {
+								edge_rays++;
+							}
 						}
 					}
 				}
