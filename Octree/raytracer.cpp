@@ -738,7 +738,7 @@ int main(int argc, char** argv) {
 					paint_stroke->create(stroke_gradient, inside, 0, 0, myImage.width(), myImage.height());
 
 					// Choose brush and paint
-					paint_brush = brushSet[1];
+					paint_brush = brushSet[0];
 					paint_brush->paint(paint_stroke, paintMap, objectTypeMap, objectBoundaryMap, objectIDMap, hit_list.front(), primary_objID, &myImage);
 					delete paint_stroke;
 				} 

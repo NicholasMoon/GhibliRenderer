@@ -155,20 +155,27 @@ bool ray::cast(std::vector<light*> &lights, double color[4], int bounces, int la
 				double cosineNL = normal.x * lights[i]->x + normal.y * lights[i]->y + normal.z * lights[i]->z;
 				if (cosineNL > 0) {
 					vec3 objectColor = objects[closestObject]->getColor();
-					if (cosineNL < 0.000000000001) {
-						color[0] += objectColor.x * lights[i]->c[0] / 6.0;
-						color[1] += objectColor.y * lights[i]->c[1] / 6.0;
-						color[2] += objectColor.z * lights[i]->c[2] / 6.0;
+					if (objects[closestObject]->object_type == 1) {
+						if (cosineNL < 0.000000000001) {
+							direct_diffuse_color[0] += objectColor.x * lights[i]->c[0] / 6.0;
+							direct_diffuse_color[1] += objectColor.y * lights[i]->c[1] / 6.0;
+							direct_diffuse_color[2] += objectColor.z * lights[i]->c[2] / 6.0;
+						}
+						else if (cosineNL < 0.35) {
+							direct_diffuse_color[0] += objectColor.x * lights[i]->c[0] / 2.0;
+							direct_diffuse_color[1] += objectColor.y * lights[i]->c[1] / 2.0;
+							direct_diffuse_color[2] += objectColor.z * lights[i]->c[2] / 2.0;
+						}
+						else{
+							direct_diffuse_color[0] += objectColor.x * lights[i]->c[0];
+							direct_diffuse_color[1] += objectColor.y * lights[i]->c[1];
+							direct_diffuse_color[2] += objectColor.z * lights[i]->c[2];
+						}
 					}
-					else if (cosineNL < 0.35) {
-						color[0] += objectColor.x * lights[i]->c[0] / 2.0;
-						color[1] += objectColor.y * lights[i]->c[1] / 2.0;
-						color[2] += objectColor.z * lights[i]->c[2] / 2.0;
-					}
-					else{
-						color[0] += objectColor.x * lights[i]->c[0];
-						color[1] += objectColor.y * lights[i]->c[1];
-						color[2] += objectColor.z * lights[i]->c[2];
+					else {
+						direct_diffuse_color[0] += objectColor.x * lights[i]->c[0] * cosineNL;
+						direct_diffuse_color[1] += objectColor.y * lights[i]->c[1] * cosineNL;
+						direct_diffuse_color[2] += objectColor.z * lights[i]->c[2] * cosineNL;
 					}
 				}
 				
