@@ -786,7 +786,7 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	for (int yj = 0; yj < height; yj++) { 
+	for (int yj = 0; yj < height; yj++) { // still causing issues
 		for (int xj = 0; xj < width; xj++) {
 			myImage(xj, yj, 0, 0) = clip(myImage(xj, yj, 0, 0) * edgeMap[yj * width + xj][0]);
 			myImage(xj, yj, 0, 1) = clip(myImage(xj, yj, 0, 1) * edgeMap[yj * width + xj][1]);
