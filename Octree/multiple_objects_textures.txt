@@ -2,6 +2,11 @@ png 200 200 multiple_objects_textures.png
 
 sun 1 1 2
 eye 0 0.45 -0.1
+environment 0.5 0.7 1 1
+stencil_ring_samples 20
+outline_cutoff .3
+stencil_radius 0.15
+stencil_rings 1
 
 objectID 0
 object_type 1

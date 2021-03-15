@@ -20,13 +20,17 @@ class material {
  public:
   material();
   material(vec3 &shininess, vec3 &transparency, double ior, double roughness, double eccentricity);
+  material(vec3 &diffuse_color, vec3 &ambient, vec3 &diffuse, vec3 &shininess, vec3 &transparency, double ior, double roughness, double eccentricity, std::string diffuse_map);
   ~material();
+  vec3 diffuse_color;
+  vec3 ambient;
   vec3 diffuse;
   vec3 shininess;
   vec3 transparency;
   double ior;
   double roughness;
   double eccentricity;
+  std::string diffuse_map;
  private:
   
 };

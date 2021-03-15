@@ -121,6 +121,11 @@ vec3 sphere::getNormal(double x, double y, double z, int flat) {
 	return vec3(x - this->x, y - this->y, z - this->z);
 }
 
+vec3 sphere::getTextureCoordinates(vec3 &hit_point) {
+	// TODO: implement
+	return vec3(0,0,0);
+}
+
 bool sphere::in_bounding_box(AABB *bounding_box) {
 	// Sphere-AABB collision -> gdbooks.gitbooks.io/3dcollisions/content/Chapter2/static_sphere_aabb.html
 

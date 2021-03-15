@@ -138,6 +138,11 @@ vec3 plane::getNormal(double x, double y, double z, int flat) {
 	return this->n;
 }
 
+vec3 plane::getTextureCoordinates(vec3 &hit_point) {
+	// TODO: implement
+	return vec3(0,0,0);
+}
+
 bool plane::in_bounding_box(AABB *bounding_box) {
 	// Plane-AABB collision - gdbooks.gitbooks.io/3dcollisions/content/Chapter2/static_aabb_plane.html
 
