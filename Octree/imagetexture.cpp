@@ -1,9 +1,4 @@
-#include "texture.h"
-
-
-vec3 color_texture::getColor(double u, double v, vec3 &hit_point) {
-	return this->color;
-}
+#include "imagetexture.h"
 
 image_texture::image_texture(std::string file) {
     this->file = file;

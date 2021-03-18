@@ -7,12 +7,14 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <map>
 #include <math.h>
 #include <algorithm>
 #include <random>
 #include <ctime>
 
 #define cimg_use_png
+#define cimg_use_jpeg
 #include "CImg.h"
 
 #include "vec3.h"
@@ -20,6 +22,9 @@
 #include "ray.h"
 #include "light.h"
 #include "material.h"
+#include "texture.h"
+#include "colortexture.h"
+#include "imagetexture.h"
 #include "object.h"
 #include "sphere.h"
 #include "plane.h"
@@ -93,6 +98,80 @@ double maxItoD(int x, int y) {
 	}
 }
 
+void readMaterialFile(std::string material_file, std::map<std::string, material *> &materials, std::vector<std::string> &texture_files) {
+	std::ifstream stream(material_file); 
+    std::string line;
+
+	std::string curr_mat_name;
+	material *curr_mat;
+
+	while (std::getline(stream, line)) {
+		if (line.empty()) {
+			continue;
+		}
+		std::string token;
+		std::stringstream ss(line);
+		ss >> token;
+		if (!token.compare("newmtl")) {
+			// material name
+			ss >> curr_mat_name;
+			material *new_mat = new material();
+			materials.insert(std::pair<std::string, material *>(curr_mat_name, new_mat)); // maybe check if key is already in there
+			curr_mat = materials.at(curr_mat_name);
+		}
+		else if (!token.compare("illum")) {
+			// illumination model
+		}
+		else if (!token.compare("Ka")) {
+			// ambient color
+			ss >> curr_mat->ambient.x;
+			ss >> curr_mat->ambient.y;
+			ss >> curr_mat->ambient.z;
+		}
+		else if (!token.compare("Kd")) {
+			// diffuse color
+			ss >> curr_mat->diffuse_color.x;
+			ss >> curr_mat->diffuse_color.y;
+			ss >> curr_mat->diffuse_color.z;
+		}
+		else if (!token.compare("Ks")) {
+			// specular color
+			ss >> curr_mat->shininess.x;
+			ss >> curr_mat->shininess.y;
+			ss >> curr_mat->shininess.z;
+		}
+		else if (!token.compare("Ns")) {
+			// eccentricity
+			ss >> curr_mat->eccentricity;
+		}
+		else if (!token.compare("Tf")) {
+			// transmission color
+			// ss >> curr_mat->transparency.x;
+			// ss >> curr_mat->transparency.y;
+			// ss >> curr_mat->transparency.z;
+		}
+		else if (!token.compare("map_Kd")) {
+			// diffuse texture map -> image name
+			ss >> curr_mat->diffuse_map;
+			texture_files.push_back(curr_mat->diffuse_map);
+		}
+		else if (!token.compare("Ni")) {
+			// index of refraction
+			ss >> curr_mat->ior;
+		}
+		else {
+			// ignore line 
+		}
+	}
+}
+
+void initTextureMaps(std::vector<std::string> &texture_files, std::map<std::string, image_texture *> &texture_maps) {
+	for (int i=0; i < texture_files.size(); i++) {
+		image_texture *new_texture = new image_texture(texture_files.at(i));
+		texture_maps.insert(std::pair<std::string, image_texture *>(texture_files.at(i), new_texture));
+	}
+}
+
 vec3 cameraDirection(double xi, double yi, double width, double height, vec3 &forward, vec3 &right, vec3 &up) {
 	vec3 camera_direction(0,0,0);
 	double sx = (2 * xi - width) / maxItoD(width,height);
@@ -146,6 +225,7 @@ int main(int argc, char** argv) {
 	int width, height = 0;
 	double milestone = 0.0;
 	double x, y, z, r = 0;
+	double u, v = 0;
 	double A, B, C, D = 0;
 	int objectID = 0;
 	int object_type = 0;
@@ -153,9 +233,10 @@ int main(int argc, char** argv) {
 	int bounces = 4;
 	double roughness = 0;
 	double eccentricity = 0.0;
-	int v1, v2, v3, v4, v1n, v2n, v3n, v4n;
+	int v1, v2, v3, v4, v1t, v2t, v3t, v4t, v1n, v2n, v3n, v4n;
 	vertex *vert1, *vert2, *vert3, *vert4;
 	double lastNormal[3] = {0,0,0};
+	double lastUV[3] = {0,0,0};
 	double lastColor[3] = {1, 1, 1};
 	double lastEmission[3] = {0, 0, 0};
 	double resultColor[4] = {0, 0, 0, 0};
@@ -170,6 +251,9 @@ int main(int argc, char** argv) {
 	vec3 direction(0,0,0);
 	vec3 shininess(0,0,0);
 	vec3 transparency(0,0,0);
+	vec3 *vert1t;
+	vec3 *vert2t;
+	vec3 *vert3t;
 	vec3 *vert1n;
 	vec3 *vert2n;
 	vec3 *vert3n;
@@ -195,6 +279,8 @@ int main(int argc, char** argv) {
 	std::string v1parts = "";
 	std::string v2parts = "";
 	std::string v3parts = "";
+	std::string materialFile = "";
+	std::string currMaterial = "";
 	std::string lineBuffer = "";
 	std::string token = "";
 	std::string outputFileName = "";
@@ -221,9 +307,13 @@ int main(int argc, char** argv) {
 	std::vector<object*> objects;
 	std::vector<light*> lights;
 	std::vector<vertex*> verts;
+	std::vector<vec3*> texcoords;
 	std::vector<vec3*> normals;
 	std::vector<std::shared_ptr<PaintParticle>> paint_particles;
-    ray *primary_ray;
+    std::map<std::string, material *> materials;
+	std::vector<std::string> texture_files;
+	std::map<std::string, image_texture *> texture_maps;
+	ray *primary_ray;
 	ray *light_dx_ray, *light_dy_ray;
 	stroke *paint_stroke;
 	brush *paint_brush;
@@ -299,10 +389,11 @@ int main(int argc, char** argv) {
 			ss >> y;
 			ss >> z;
 			vec3 coordinate(x,y,z);
+			vec3 uv(lastUV[0], lastUV[0], lastUV[0]);
 			vec3 normal(lastNormal[0], lastNormal[1], lastNormal[2]);
 			normal.normalize();
 			vec3 color(lastColor[0], lastColor[1], lastColor[2]);
-			vertex *v = new vertex(coordinate, normal, color);
+			vertex *v = new vertex(coordinate, uv, normal, color);
 			verts.push_back(v);
 		}
 		else if (!token.compare("bulb")) {
@@ -370,16 +461,28 @@ int main(int argc, char** argv) {
 			right = forward.cross(up);
 			right.normalize();
 		}
+		else if(!token.compare("mtllib")) {
+			ss >> materialFile;
+			readMaterialFile(materialFile, materials, texture_files);
+			initTextureMaps(texture_files, texture_maps);
+		}
 		else if (!token.compare("v")) {
 			ss >> x;
 			ss >> y;
 			ss >> z;
 			vec3 coordinate(x,y,z);
+			vec3 uv(lastUV[0], lastUV[0], lastUV[0]);
 			vec3 normal(lastNormal[0], lastNormal[1], lastNormal[2]);
 			normal.normalize();
 			vec3 color(lastColor[0], lastColor[1], lastColor[2]);
-			vertex *v = new vertex(coordinate, normal, color);
+			vertex *v = new vertex(coordinate, uv, normal, color);
 			verts.push_back(v);
+		}
+		else if (!token.compare("vt")) {
+			ss >> u;
+			ss >> v;
+			vec3 *t = new vec3(u, v, 0);
+			texcoords.push_back(t);
 		}
 		else if (!token.compare("vn")) {
 			ss >> x;
@@ -387,6 +490,9 @@ int main(int argc, char** argv) {
 			ss >> z;
 			vec3 *v = new vec3(x, y, z);
 			normals.push_back(v);
+		}
+		else if (!token.compare("usemtl")) {
+			ss >> currMaterial;
 		}
 		else if (!token.compare("f")) {
 			ss >> v1parts;
@@ -398,7 +504,7 @@ int main(int argc, char** argv) {
 			int v1tSlash = v1parts.find("/", v1tStart);
 			int v1nStart = v1tSlash + 1;
 			v1 = std::stoi(v1parts.substr(0, v1Slash), nullptr);
-			//v1t = std::stoi(v1parts.substr(v1tStart, v1tSlash - v1tStart), nullptr, 16);
+			v1t = std::stoi(v1parts.substr(v1tStart, v1tSlash - v1tStart), nullptr);
 			v1n = std::stoi(v1parts.substr(v1nStart), nullptr);
 
 			int v2Slash = v2parts.find("/", 0);
@@ -406,7 +512,7 @@ int main(int argc, char** argv) {
 			int v2tSlash = v2parts.find("/", v2tStart);
 			int v2nStart = v2tSlash + 1;
 			v2 = std::stoi(v2parts.substr(0, v2Slash), nullptr);
-			//v2t = std::stoi(v2parts.substr(v2tStart, v2tSlash - v2tStart), nullptr, 16);
+			v2t = std::stoi(v2parts.substr(v2tStart, v2tSlash - v2tStart), nullptr);
 			v2n = std::stoi(v2parts.substr(v2nStart), nullptr);
 
 			int v3Slash = v3parts.find("/", 0);
@@ -414,7 +520,7 @@ int main(int argc, char** argv) {
 			int v3tSlash = v3parts.find("/", v3tStart);
 			int v3nStart = v3tSlash + 1;
 			v3 = std::stoi(v3parts.substr(0, v3Slash), nullptr);
-			//v3t = std::stoi(v3parts.substr(v3tStart, v3tSlash - v3tStart), nullptr, 16);
+			v3t = std::stoi(v3parts.substr(v3tStart, v3tSlash - v3tStart), nullptr);
 			v3n = std::stoi(v3parts.substr(v3nStart), nullptr);
 
 			if (v1 < 0) {
@@ -435,6 +541,26 @@ int main(int argc, char** argv) {
 			else {
 				vert3 = verts.at(v3 - 1);
 			}
+
+			if (v1t < 0) {
+				vert1t = texcoords.at(texcoords.size() + v1t);
+			}
+			else {
+				vert1t = texcoords.at(v1t - 1);
+			}
+			if (v2t < 0) {
+				vert2t = texcoords.at(texcoords.size() + v2t);
+			}
+			else {
+				vert2t = texcoords.at(v2t - 1);
+			}
+			if (v3t < 0) {
+				vert3t = texcoords.at(texcoords.size() + v3t);
+			}
+			else {
+				vert3t = texcoords.at(v3t - 1);
+			}
+
 			if (v1n < 0) {
 				vert1n = normals.at(normals.size() + v1n);
 			}
@@ -453,17 +579,32 @@ int main(int argc, char** argv) {
 			else {
 				vert3n = normals.at(v3n - 1);
 			}
-			vert1 = new vertex(vert1->xyz, *vert1n, vert1->color);
-			vert2 = new vertex(vert2->xyz, *vert2n, vert2->color);
-			vert3 = new vertex(vert3->xyz, *vert3n, vert3->color);
-			material *m = new material(shininess, transparency, ior, roughness, eccentricity);
+			vert1 = new vertex(vert1->xyz, *vert1t, *vert1n, vert1->color);
+			vert2 = new vertex(vert2->xyz, *vert2t, *vert2n, vert2->color);
+			vert3 = new vertex(vert3->xyz, *vert3t, *vert3n, vert3->color);
+			// material *m = new material(shininess, transparency, ior, roughness, eccentricity);
 			// tri *t = new tri(vert1, vert2, vert3, lastColor, m, objectID, object_type);
 
 			// for testing purposes (random color per tri)
 			/*lastColor[0] = color_distribution(color_generator);
 			lastColor[1] = color_distribution(color_generator);
 			lastColor[2] = color_distribution(color_generator);*/
-			tri *t = new tri(vert1, vert2, vert3, lastColor, lastEmission, m, objectID, object_type); 
+			// tri *t = new tri(vert1, vert2, vert3, lastColor, lastEmission, m, objectID, object_type);
+
+			// if 'color' command was seen -> use that for texture color
+			// vec3 last_color(lastColor[0], lastColor[1], lastColor[2]);
+			// texture *tex = new color_texture(last_color);
+			// if 'mtllib' command was seen -> use that for texture color
+
+			material *m = materials.at(currMaterial); // get material for object
+			texture *tex;
+			if (m->diffuse_map != "") {
+				tex = texture_maps.at(m->diffuse_map);
+			}
+			else {
+				tex = new color_texture(m->diffuse_color);
+			}
+			tri *t = new tri(vert1, vert2, vert3, tex, lastEmission, m, objectID, object_type);
 			objects.push_back(t);
 		}
 		else if (!token.compare("stencil_radius")) {

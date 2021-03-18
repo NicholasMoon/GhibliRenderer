@@ -48,7 +48,6 @@ material::material(vec3 &diffuse_color, vec3 &ambient, vec3 &diffuse, vec3 &shin
 	this->ambient = ambient; 
 	this->shininess = shininess;
 	this->transparency = transparency;
-	vec3 diffuse(0,0,0);
 	this->diffuse = diffuse;
 	this->diffuse.x = (1 - this->shininess.x) * (1 - transparency.x);
 	this->diffuse.y = (1 - this->shininess.y) * (1 - transparency.y);

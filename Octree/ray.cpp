@@ -171,7 +171,8 @@ bool ray::cast(std::vector<light*> &lights, double color[4], double environmentC
 				}
 				double cosineNL = normal.x * lights[i]->x + normal.y * lights[i]->y + normal.z * lights[i]->z;
 				if (cosineNL > 0) {
-					vec3 objectColor = objects[closestObject]->getColor();
+					vec3 texCoords = objects[closestObject]->getTextureCoordinates(hitPoint);
+					vec3 objectColor = objects[closestObject]->getColor(texCoords.x, texCoords.y, hitPoint);
 					if (objects[closestObject]->object_type == 1) {
 						if (cosineNL < 0.000000000001) {
 							direct_diffuse_color[0] += objectColor.x * lights[i]->c[0] / 6.0;
@@ -223,7 +224,8 @@ bool ray::cast(std::vector<light*> &lights, double color[4], double environmentC
 					distanceToBlock = light_ray->castLight(lightobjects, lights[i], distanceToLight);
 				}
 				delete light_ray;
-				vec3 objectColor = objects[closestObject]->getColor();
+				vec3 texCoords = objects[closestObject]->getTextureCoordinates(hitPoint);
+				vec3 objectColor = objects[closestObject]->getColor(texCoords.x, texCoords.y, hitPoint);
 				if (distanceToBlock < distanceToLight) {
 					if (objects[closestObject]->object_type == 1) {
 						direct_diffuse_color[0] += objectColor.x * lights[i]->c[0] / 6.0;
@@ -349,7 +351,9 @@ bool ray::cast(std::vector<light*> &lights, double color[4], double environmentC
 					}
 					double cosineNL = normal.x * directionToLight.x + normal.y * directionToLight.y + normal.z * directionToLight.z;
 					if (cosineNL > 0) {
-						vec3 objectColor = objects[closestObject]->getColor();
+						// vec3 objectColor = objects[closestObject]->getColor();
+						vec3 texCoords = objects[closestObject]->getTextureCoordinates(hitPoint);
+						vec3 objectColor = objects[closestObject]->getColor(texCoords.x, texCoords.y, hitPoint);
 						direct_diffuse_color[0] += (lights[i]->c[0] * cosineNL) / (distanceToLight * distanceToLight);
 						direct_diffuse_color[1] += (lights[i]->c[1] * cosineNL) / (distanceToLight * distanceToLight);
 						direct_diffuse_color[2] += (lights[i]->c[2] * cosineNL) / (distanceToLight * distanceToLight);
@@ -405,7 +409,8 @@ bool ray::cast(std::vector<light*> &lights, double color[4], double environmentC
 		indirect_diffuse_color[1] /= indirect_samples;
 		indirect_diffuse_color[2] /= indirect_samples;
 	}
-	vec3 objectColor = objects[closestObject]->getColor();
+	vec3 texCoords = objects[closestObject]->getTextureCoordinates(hitPoint);
+	vec3 objectColor = objects[closestObject]->getColor(texCoords.x, texCoords.y, hitPoint);
 	double r_channel = direct_diffuse_color[0] + indirect_diffuse_color[0];
 	double g_channel = direct_diffuse_color[1] + indirect_diffuse_color[1];
 	double b_channel = direct_diffuse_color[2] + indirect_diffuse_color[2];	

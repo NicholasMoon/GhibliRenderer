@@ -7,9 +7,9 @@
 
 
 tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3]) {
-	vertex vert1(v1->xyz, v1->normal, v1->color);
-	vertex vert2(v2->xyz, v2->normal, v2->color);
-	vertex vert3(v3->xyz, v3->normal, v3->color);
+	vertex vert1(v1->xyz, v1->uv, v1->normal, v1->color);
+	vertex vert2(v2->xyz, v2->uv, v2->normal, v2->color);
+	vertex vert3(v3->xyz, v3->uv, v3->normal, v3->color);
 	this->v1 = vert1;
 	this->v2 = vert2;
 	this->v3 = vert3;
@@ -42,9 +42,9 @@ tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3]) {
 
 tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3], material *mat, int objectID) {
 	this->objectID = objectID;
-	vertex vert1(v1->xyz, v1->normal, v1->color);
-	vertex vert2(v2->xyz, v2->normal, v2->color);
-	vertex vert3(v3->xyz, v3->normal, v3->color);
+	vertex vert1(v1->xyz, v1->uv, v1->normal, v1->color);
+	vertex vert2(v2->xyz, v2->uv, v2->normal, v2->color);
+	vertex vert3(v3->xyz, v3->uv, v3->normal, v3->color);
 	this->v1 = vert1;
 	this->v2 = vert2;
 	this->v3 = vert3;
@@ -79,9 +79,9 @@ tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3], material *mat, int obj
 tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3], material *mat, int objectID, int object_type) {
 	this->objectID = objectID;
 	this->object_type = object_type;
-	vertex vert1(v1->xyz, v1->normal, v1->color);
-	vertex vert2(v2->xyz, v2->normal, v2->color);
-	vertex vert3(v3->xyz, v3->normal, v3->color);
+	vertex vert1(v1->xyz, v1->uv, v1->normal, v1->color);
+	vertex vert2(v2->xyz, v2->uv, v2->normal, v2->color);
+	vertex vert3(v3->xyz, v3->uv, v3->normal, v3->color);
 	this->v1 = vert1;
 	this->v2 = vert2;
 	this->v3 = vert3;
@@ -116,9 +116,9 @@ tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3], material *mat, int obj
 tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3], double e[3], material *mat, int objectID, int object_type) {
 	this->objectID = objectID;
 	this->object_type = object_type;
-	vertex vert1(v1->xyz, v1->normal, v1->color);
-	vertex vert2(v2->xyz, v2->normal, v2->color);
-	vertex vert3(v3->xyz, v3->normal, v3->color);
+	vertex vert1(v1->xyz, v1->uv, v1->normal, v1->color);
+	vertex vert2(v2->xyz, v2->uv, v2->normal, v2->color);
+	vertex vert3(v3->xyz, v3->uv, v3->normal, v3->color);
 	this->v1 = vert1;
 	this->v2 = vert2;
 	this->v3 = vert3;

@@ -21,26 +21,4 @@ class texture {
   
 };
 
-class color_texture : public texture {
- public:
-  color_texture() {};
-  color_texture(vec3 &color) : color(color) {};
-  vec3 getColor(double u, double v, vec3 &hit_point);
-  vec3 color;
- private:
- 
-};
-
-class image_texture : public texture {
- public:
-  image_texture() {};
-  image_texture(std::string file);
-  vec3 getColor(double u, double v, vec3 &hit_point);
-  std::string file;
-  CImg<float> image;
-  int width, height;
- private:
-  
-};
-
 #endif
