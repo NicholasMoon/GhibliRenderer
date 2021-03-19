@@ -136,9 +136,9 @@ void readMaterialFile(std::string material_file, std::map<std::string, material 
 		}
 		else if (!token.compare("Ks")) {
 			// specular color
-			ss >> curr_mat->shininess.x;
-			ss >> curr_mat->shininess.y;
-			ss >> curr_mat->shininess.z;
+			// ss >> curr_mat->shininess.x;
+			// ss >> curr_mat->shininess.y;
+			// ss >> curr_mat->shininess.z;
 		}
 		else if (!token.compare("Ns")) {
 			// eccentricity
@@ -284,6 +284,8 @@ int main(int argc, char** argv) {
 	std::string lineBuffer = "";
 	std::string token = "";
 	std::string outputFileName = "";
+	bool material_file_provided = false;
+	bool color_provided = false;
 	std::ifstream inputFile;
 	inputFile.open(argv[1]);
 
@@ -369,6 +371,7 @@ int main(int argc, char** argv) {
 			ss >> lastColor[0];
 			ss >> lastColor[1];
 			ss >> lastColor[2];
+			color_provided = true;
 		}
 		else if (!token.compare("emission")) {
 			ss >> lastEmission[0];
@@ -463,6 +466,7 @@ int main(int argc, char** argv) {
 		}
 		else if(!token.compare("mtllib")) {
 			ss >> materialFile;
+			material_file_provided = true;
 			readMaterialFile(materialFile, materials, texture_files);
 			initTextureMaps(texture_files, texture_maps);
 		}
@@ -591,19 +595,25 @@ int main(int argc, char** argv) {
 			lastColor[2] = color_distribution(color_generator);*/
 			// tri *t = new tri(vert1, vert2, vert3, lastColor, lastEmission, m, objectID, object_type);
 
-			// if 'color' command was seen -> use that for texture color
-			// vec3 last_color(lastColor[0], lastColor[1], lastColor[2]);
-			// texture *tex = new color_texture(last_color);
-			// if 'mtllib' command was seen -> use that for texture color
-
-			material *m = materials.at(currMaterial); // get material for object
+			material *m;
 			texture *tex;
-			if (m->diffuse_map != "") {
-				tex = texture_maps.at(m->diffuse_map);
+			if (material_file_provided) {
+				m = materials.at(currMaterial); // assumes that 'usemtl' was seen 
+				// m->shininess = shininess;
+				// m->transparency = transparency;
+				if (m->diffuse_map != "") {
+					tex = texture_maps.at(m->diffuse_map); // use image texture if file provided
+				}
+				else {
+					tex = new color_texture(m->diffuse_color); // else use diffuse color
+				}
 			}
-			else {
-				tex = new color_texture(m->diffuse_color);
+			else if (color_provided) {
+				m = new material(shininess, transparency, ior, roughness, eccentricity);
+				vec3 last_color(lastColor[0], lastColor[1], lastColor[2]);
+				tex = new color_texture(last_color);
 			}
+
 			tri *t = new tri(vert1, vert2, vert3, tex, lastEmission, m, objectID, object_type);
 			objects.push_back(t);
 		}
