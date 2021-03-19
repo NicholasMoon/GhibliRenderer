@@ -26,6 +26,7 @@ class vec3 {
   double magnitude();
   void reverse();
   double distance(vec3 &v);
+  void printVec();
   ~vec3();
   double x, y, z;
  private:

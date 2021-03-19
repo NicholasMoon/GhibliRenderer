@@ -73,6 +73,10 @@ double vec3::distance(vec3 &v) {
   return sqrt(pow(v.x - this->x, 2) + pow(v.y - this->y, 2) + pow(v.z - this->z, 2));
 }
 
+void vec3::printVec() {
+  std::cout << "(" << this->x << ", " << this->y << ", " << this->z << ")" << std::endl;
+}
+
 vec3::~vec3() {
 
 }

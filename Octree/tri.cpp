@@ -7,9 +7,9 @@
 
 
 tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3]) {
-	vertex vert1(v1->xyz, v1->normal, v1->color);
-	vertex vert2(v2->xyz, v2->normal, v2->color);
-	vertex vert3(v3->xyz, v3->normal, v3->color);
+	vertex vert1(v1->xyz, v1->uv, v1->normal, v1->color);
+	vertex vert2(v2->xyz, v2->uv, v2->normal, v2->color);
+	vertex vert3(v3->xyz, v3->uv, v3->normal, v3->color);
 	this->v1 = vert1;
 	this->v2 = vert2;
 	this->v3 = vert3;
@@ -42,9 +42,9 @@ tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3]) {
 
 tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3], material *mat, int objectID) {
 	this->objectID = objectID;
-	vertex vert1(v1->xyz, v1->normal, v1->color);
-	vertex vert2(v2->xyz, v2->normal, v2->color);
-	vertex vert3(v3->xyz, v3->normal, v3->color);
+	vertex vert1(v1->xyz, v1->uv, v1->normal, v1->color);
+	vertex vert2(v2->xyz, v2->uv, v2->normal, v2->color);
+	vertex vert3(v3->xyz, v3->uv, v3->normal, v3->color);
 	this->v1 = vert1;
 	this->v2 = vert2;
 	this->v3 = vert3;
@@ -79,9 +79,9 @@ tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3], material *mat, int obj
 tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3], material *mat, int objectID, int object_type) {
 	this->objectID = objectID;
 	this->object_type = object_type;
-	vertex vert1(v1->xyz, v1->normal, v1->color);
-	vertex vert2(v2->xyz, v2->normal, v2->color);
-	vertex vert3(v3->xyz, v3->normal, v3->color);
+	vertex vert1(v1->xyz, v1->uv, v1->normal, v1->color);
+	vertex vert2(v2->xyz, v2->uv, v2->normal, v2->color);
+	vertex vert3(v3->xyz, v3->uv, v3->normal, v3->color);
 	this->v1 = vert1;
 	this->v2 = vert2;
 	this->v3 = vert3;
@@ -116,15 +116,53 @@ tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3], material *mat, int obj
 tri::tri(vertex *v1, vertex *v2, vertex *v3, double c[3], double e[3], material *mat, int objectID, int object_type) {
 	this->objectID = objectID;
 	this->object_type = object_type;
-	vertex vert1(v1->xyz, v1->normal, v1->color);
-	vertex vert2(v2->xyz, v2->normal, v2->color);
-	vertex vert3(v3->xyz, v3->normal, v3->color);
+	vertex vert1(v1->xyz, v1->uv, v1->normal, v1->color);
+	vertex vert2(v2->xyz, v2->uv, v2->normal, v2->color);
+	vertex vert3(v3->xyz, v3->uv, v3->normal, v3->color);
 	this->v1 = vert1;
 	this->v2 = vert2;
 	this->v3 = vert3;
 	this->c[0] = c[0];
 	this->c[1] = c[1];
 	this->c[2] = c[2];
+	this->e[0] = e[0];
+	this->e[1] = e[1];
+	this->e[2] = e[2];
+	this->mat = mat;
+	vec3 edge1(this->v2.xyz.x - this->v1.xyz.x, this->v2.xyz.y - this->v1.xyz.y, this->v2.xyz.z - this->v1.xyz.z);
+	this->edge1 = edge1;
+	vec3 edge2(this->v3.xyz.x - this->v1.xyz.x, this->v3.xyz.y - this->v1.xyz.y, this->v3.xyz.z - this->v1.xyz.z);
+	this->edge2 = edge2;
+	this->n = edge1.cross(edge2);
+	this->n.normalize();
+
+	this->e2 = this->edge2.cross(this->n);
+	this->e3 = this->edge1.cross(this->n);
+
+	double dot2 = this->e2.dot(this->edge1);
+	double dot3 = this->e3.dot(this->edge2);
+
+	this->e2.x /= dot2;
+	this->e2.y /= dot2;
+	this->e2.z /= dot2;
+
+	this->e3.x /= dot3;
+	this->e3.y /= dot3;
+	this->e3.z /= dot3;
+
+	this->box_pointers = 0;
+}
+
+tri::tri(vertex *v1, vertex *v2, vertex *v3, texture *t, double e[3], material *mat, int objectID, int object_type) { // supports texture color
+	this->objectID = objectID;
+	this->object_type = object_type;
+	vertex vert1(v1->xyz, v1->uv, v1->normal, v1->color);
+	vertex vert2(v2->xyz, v2->uv, v2->normal, v2->color);
+	vertex vert3(v3->xyz, v3->uv, v3->normal, v3->color);
+	this->v1 = vert1;
+	this->v2 = vert2;
+	this->v3 = vert3;
+	this->tex = t;
 	this->e[0] = e[0];
 	this->e[1] = e[1];
 	this->e[2] = e[2];
@@ -254,6 +292,11 @@ vec3 tri::getColor() {
 	return vec3(this->c[0], this->c[1], this->c[2]);
 }
 
+vec3 tri::getColor(double u, double v, vec3 &hit_point) {
+	
+	return this->tex->getColor(u, v, hit_point);
+}
+
 vec3 tri::getEmission() { 
 	return vec3(e[0], e[1], e[2]);
 }
@@ -273,6 +316,17 @@ vec3 tri::getNormal(double x, double y, double z, int flat) {
 		interpolated_normal.normalize();
 		return interpolated_normal;
 	}
+}
+
+vec3 tri::getTextureCoordinates(vec3 &hit_point) {
+	vec3 x1(hit_point.x - this->v1.xyz.x, hit_point.y - this->v1.xyz.y, hit_point.z - this->v1.xyz.z);
+	double b2 = x1.dot(this->e2);
+	double b3 = x1.dot(this->e3);
+	double b1 = 1 - b2 - b3;
+
+	double u = this->barycentric.x * this->v1.uv.x + this->barycentric.y * this->v2.uv.x + this->barycentric.z * this->v3.uv.x;
+	double v = this->barycentric.x * this->v1.uv.y + this->barycentric.y * this->v2.uv.y + this->barycentric.z * this->v3.uv.y;
+	return vec3(u, v, 0);
 }
 
 bool tri::SAT_projection(vec3 &axis, vec3 &center, vec3 &extents, vec3 &box_normal_x, vec3 &box_normal_y, vec3 &box_normal_z, vec3 &vc1, vec3 &vc2, vec3 &vc3) {

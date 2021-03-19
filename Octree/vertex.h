@@ -16,10 +16,11 @@
 
 class vertex {
  public:
-  vertex(vec3 &xyz, vec3 &normal, vec3 &color);
+  vertex(vec3 &xyz, vec3 &uv, vec3 &normal, vec3 &color);
   vertex();
   ~vertex();
   vec3 xyz;
+  vec3 uv;
   vec3 normal;
   vec3 color;
  private:
