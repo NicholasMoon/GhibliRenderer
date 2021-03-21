@@ -322,7 +322,9 @@ int main(int argc, char** argv) {
 
 
 	theScene->inputFile.close();
-	myImage.save_png(theScene->outputFileName.c_str());
+	std::string image_directory = "images/";
+    image_directory.append(theScene->outputFileName);
+	myImage.save_png(image_directory.c_str());
 	std::cout << "Progress: 100% done, time elapsed: " << difftime(time(NULL), start) << std::endl;
     	return 0;
 }
