@@ -92,7 +92,7 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 		double reflect_dir_x = this->direction.x - 2 * (n_dot_i) * normal.x;
 		double reflect_dir_y = this->direction.y - 2 * (n_dot_i) * normal.y;
 		double reflect_dir_z = this->direction.z - 2 * (n_dot_i) * normal.z;
-		ray *reflect_ray = new ray(hitX, hitY, hitZ, reflect_dir_x, reflect_dir_y, reflect_dir_z);
+		ray *reflect_ray = new ray(hitX + (.0001) * reflect_dir_x, hitY + (.0001) * reflect_dir_y, hitZ + (.0001) * reflect_dir_z, reflect_dir_x, reflect_dir_y, reflect_dir_z);
 		reflect_ray->cast(theScene, imageBuffers, reflection_color, bounces - 1, -1, primary_ray, x, y, primary_objID, hit_normal, object_type, hit_list, shadowed, indirect_bounces);
 		delete reflect_ray;
 	}
@@ -513,7 +513,7 @@ double ray::detect_edge(Scene *theScene, double color[4], int bounces, int lastO
 		double reflect_dir_x = this->direction.x - 2 * (n_dot_i) * normal.x;
 		double reflect_dir_y = this->direction.y - 2 * (n_dot_i) * normal.y;
 		double reflect_dir_z = this->direction.z - 2 * (n_dot_i) * normal.z;
-		ray *reflect_ray = new ray(hitX, hitY, hitZ, reflect_dir_x, reflect_dir_y, reflect_dir_z);
+		ray *reflect_ray = new ray(hitX + (.0001) * reflect_dir_x, hitY + (.0001) * reflect_dir_y, hitZ + (.0001) * reflect_dir_z, reflect_dir_x, reflect_dir_y, reflect_dir_z);
 		vec3 hitnormal(0,0,0);
 		distance = reflect_ray->detect_edge(theScene, color, bounces, -1, stencil_objID, object_type, hit_list);
 		delete reflect_ray;

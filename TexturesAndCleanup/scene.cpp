@@ -342,6 +342,8 @@ Scene::Scene(char** argv) {
 			texture *tex;
 			if (material_file_provided) {
 				m = materials.at(currMaterial);
+				m->shininess = shininess;
+				m->transparency = transparency;
 				if (m->diffuse_map != "") {
 					tex = texture_maps.at(m->diffuse_map);
 				}

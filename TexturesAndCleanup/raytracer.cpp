@@ -190,7 +190,6 @@ int main(int argc, char** argv) {
 				if (objectType == 1) {
 					for (double ring_radius = theScene->stencil_radius; ring_radius > 0; ring_radius -= theScene->stencil_rings) {
 						for (test_num = 0; test_num < theScene->stencil_ring_samples; test_num++) {
-							continue;
 							int edgeObjectType = 0;
 							radius += step_size;
 							double randTheta = distributionTheta(generator2);
