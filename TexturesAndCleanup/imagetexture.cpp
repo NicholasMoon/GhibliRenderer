@@ -26,6 +26,8 @@ vec3 image_texture::getColor(double u, double v, vec3 &hit_point) {
     // clamp if outside image boundaries
     if (x >= width) x = width - 1;
     if (y >= height) y = height - 1; 
+    if (x <= 0) x = 0;
+    if (y <= 0) y = 0;
 
     texture_color.x = (this->image)(x, y, 0, 0) / 255;
     texture_color.y = (this->image)(x, y, 0, 1) / 255;
