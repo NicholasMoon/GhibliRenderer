@@ -158,10 +158,15 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 				distanceToBlock = light_ray->castLight(objects, theScene->lights[i], distanceToLight);
 				delete light_ray;
 				if (distanceToBlock < distanceToLight) {
-					diffuse_color[0] += 0;
-					diffuse_color[1] += 0;
-					diffuse_color[2] += 0;
-					continue;
+					if (objects[closestObject]->object_type == 1) {
+						diffuse_color[0] += 0;
+						diffuse_color[1] += 0;
+						diffuse_color[2] += 0;
+						continue;
+					}
+					else {
+						shadowed = 1;
+					}
 				}
 				if (objects[closestObject]->mat->roughness > 0) {
 					normal.x += rand_x;
