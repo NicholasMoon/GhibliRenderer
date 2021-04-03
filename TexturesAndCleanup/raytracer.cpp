@@ -267,7 +267,7 @@ int main(int argc, char** argv) {
 					if (cosTheta > 0) inside = true;
 					
 					// Make new stroke
-					paint_stroke = new stroke(xi, yi, particle_color, primary_ray->direction, hit_normal, imageBuffers->depthMap[index]);
+					paint_stroke = new stroke(xi, yi, particle_color, primary_ray->direction, hit_normal, imageBuffers->depthMap[index], hit_list.front(), primary_objID);
 					// Set these based on position and distance from camera
 					paint_stroke->set_length(strokeLengths[1]);
 					paint_stroke->set_curvature(0.8);
@@ -275,7 +275,7 @@ int main(int argc, char** argv) {
 
 					// Choose brush and paint
 					paint_brush = brushSet[1];
-					paint_brush->paint(paint_stroke, imageBuffers->paintMap, imageBuffers->objectTypeMap, imageBuffers->objectBoundaryMap, imageBuffers->objectIDMap, hit_list.front(), primary_objID, &myImage);
+					paint_brush->paint(paint_stroke, imageBuffers, &myImage);
 					delete paint_stroke;
 				} 
 			}
@@ -290,7 +290,7 @@ int main(int argc, char** argv) {
 			AAColor[3] += resultColor[3];
 			delete primary_ray;
 		}
-		if (foreground_samples > background_samples || theScene->environment) {
+		if (foreground_samples > background_samples || theScene->environment || imageBuffers->environmentMap[yi * theScene->width + xi]) {
 			myImage(xi, yi, 0, 0) = clip((AAColor[0] / (double) theScene->spp) * 255);
 			myImage(xi, yi, 0, 1) = clip((AAColor[1] / (double) theScene->spp) * 255);
 			myImage(xi, yi, 0, 2) = clip((AAColor[2] / (double) theScene->spp) * 255);

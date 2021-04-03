@@ -33,6 +33,9 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 	}
 	if (closestObject == -1) {
 		// ray didn't hit any objects
+		if (x != -1 && y != -1 && primary_ray) {
+			imageBuffers->environmentMap[y * theScene->width + x] = 1;
+		}
 		if (theScene->environment) {
 			if (theScene->environmentColor[3] == 1) { // gradient - color to white
 				double t = 0.5 * (this->direction.y + 1.0);

@@ -95,7 +95,8 @@ void brush::create_mask() {
 //     return 0;
 // }
 
-void brush::paint(stroke *stroke, float *paintMap, int *objectTypeMap, int *objectBoundaryMap, int *objectIDMap, int primaryObjectBoundary, int currObjectID, CImg<float> *img) { 
+// void brush::paint(stroke *stroke, float *paintMap, int *objectTypeMap, int *objectBoundaryMap, int *objectIDMap, int primaryObjectBoundary, int currObjectID, CImg<float> *img) {
+void brush::paint(stroke *stroke, ImageBuffers *imageBuffers, CImg<float> *img) {  
     for (int i=0; i < stroke->points.size(); i++) { // iterate through all points in stroke
         auto curr_stroke_point = stroke->points.at(i);
         vec3 color = stroke->color; 
@@ -110,9 +111,10 @@ void brush::paint(stroke *stroke, float *paintMap, int *objectTypeMap, int *obje
                 // std::cout << "i: " << i << " j: " << j << std::endl;
                 if (curr_x < 0 || curr_x >= img->width()) continue;
                 if (curr_y < 0 || curr_y >= img->height()) continue;
-                if (objectTypeMap[curr_y * img->width() + curr_x]) continue; 
-                if (objectBoundaryMap[curr_y * img->width() + curr_x] != primaryObjectBoundary) continue; 
-                if (objectIDMap[curr_y * img->width() + curr_x] != currObjectID) continue;
+                if (imageBuffers->objectTypeMap[curr_y * img->width() + curr_x]) continue; 
+                if (imageBuffers->objectBoundaryMap[curr_y * img->width() + curr_x] != stroke->primaryObjectBoundary) continue; 
+                if (imageBuffers->objectIDMap[curr_y * img->width() + curr_x] != stroke->currObjectID) continue;
+                if (imageBuffers->environmentMap[curr_y * img->width() + curr_x]) continue;
                 double paint_num = this->mask[j+radius][k+radius];
                 if (paint_num) {
                     vec3 mix_color, final_color;

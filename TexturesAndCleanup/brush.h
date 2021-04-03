@@ -18,7 +18,8 @@ public:
     // double linear(std::tuple<int, int> offset);
     // double inverse_square(std::tuple<int, int> offset);
     // double smoothstep(std::tuple<int, int> offset);
-    void paint(stroke *stroke, float *paintBuffer, int *objectTypeMap, int *objectBoundaryMap, int *objectIDMap, int currObjectBoundary, int currObjectID, CImg<float> *img);
+    // void paint(stroke *stroke, float *paintBuffer, int *objectTypeMap, int *objectBoundaryMap, int *objectIDMap, int currObjectBoundary, int currObjectID, CImg<float> *img);
+    void paint(stroke *stroke, ImageBuffers *imageBuffers, CImg<float> *img);
     ~brush();
     int radius, mask_size;
     double **mask;
