@@ -19,12 +19,14 @@
 class object;
 class OctreeNode;
 class Scene;
+class HitRecord;
 #include "vec3.h"
 #include "object.h"
 #include "light.h"
 #include "octreenode.h"
 #include "scene.h"
 #include "image_buffers.h"
+#include "hit_record.h"
 
 
 class ray {
@@ -38,7 +40,8 @@ class ray {
 	dir_sign[2] = (inverse_direction.z < 0);
   };
 
-  bool cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int bounces, int lastObject, int primary_ray, int x, int y, int &primary_objID, vec3 &hit_normal, int &object_type, std::vector<int> &hit_list, int &shadowed, int indirect_bounces);
+  // bool cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int bounces, int lastObject, int primary_ray, int x, int y, int &primary_objID, vec3 &hit_normal, int &object_type, std::vector<int> &hit_list, int &shadowed, int indirect_bounces);
+  bool cast(Scene *theScene, ImageBuffers *imageBuffers, HitRecord *hitRecord, double color[4], int bounces, int indirect_bounces);
   double detect_edge(Scene *theScene, double color[4], int bounces, int lastObject, int &stencil_objID, int &object_type, std::vector<int> &hit_list);
   double castLight(std::vector<object*> &objects, light *targetLight, double distance);
   ~ray();

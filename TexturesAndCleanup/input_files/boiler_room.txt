@@ -1,4 +1,4 @@
-png 400 225 boiler_room.png
+png 400 225 boiler_room2.png
 
 color 4 4 4
 sun 1 1 1
@@ -1250,6 +1250,7 @@ vn 0.169981 0.985443 -0.003123
 vn -0.000000 -1.000000 -0.000000
 vn -0.000000 1.000000 0.000000
 objectID 1
+object_type 1
 g pSphere1
 usemtl initialShadingGroup
 f 9/9/9 10/10/10 29/30/11

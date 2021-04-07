@@ -7,7 +7,8 @@
 
 #define PI 3.14159265
 
-bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int bounces, int lastObject, int primary_ray, int x, int y, int &primary_objID, vec3 &hit_normal, int &object_type, std::vector<int> &hit_list, int &shadowed, int indirect_bounces) {
+// bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int bounces, int lastObject, int primary_ray, int x, int y, int &primary_objID, vec3 &hit_normal, int &object_type, std::vector<int> &hit_list, int &shadowed, int indirect_bounces) {
+bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, HitRecord *hitRecord, double color[4], int bounces, int indirect_bounces) {
 	double distance = std::numeric_limits<double>::max();
 	int closestObject = -1;
 	double direct_diffuse_color[3] = {0,0,0};
@@ -26,13 +27,16 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 	}
 	int closestObjectID = -1;
 	for (int j = 0; j < objects.size(); j++) {
-		if (objects[j]->hit(this, objects, theScene->lights, color, distance)) {
+		if (objects[j]->hit(this, objects, theScene->lights, color, distance)) { 
 			closestObject = j;
 			closestObjectID = objects[j]->objectID;	
 		}
 	}
 	if (closestObject == -1) {
 		// ray didn't hit any objects
+		if (hitRecord->x != -1 && hitRecord->y != -1 && hitRecord->primary_ray) {
+			imageBuffers->environmentMap[hitRecord->y * theScene->width + hitRecord->x] = 1;
+		}
 		if (theScene->environment) {
 			if (theScene->environmentColor[3] == 1) { // gradient - color to white
 				double t = 0.5 * (this->direction.y + 1.0);
@@ -53,13 +57,14 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 		}	
 		return false;
 	}
-	primary_objID = objects[closestObject]->objectID;
-	hit_list.push_back(objects[closestObject]->objectID);
-	if (x != -1 && y != -1 && primary_ray) {
-		imageBuffers->depthMap[y * theScene->width + x] = distance;
+	
+	hitRecord->primary_objID = objects[closestObject]->objectID;
+	hitRecord->hit_list.push_back(objects[closestObject]->objectID);
+	if (hitRecord->x != -1 && hitRecord->y != -1 && hitRecord->primary_ray) {
+		imageBuffers->depthMap[hitRecord->y * theScene->width + hitRecord->x] = distance;
 	}
-	int previous_obj_type = object_type;
-	object_type = objects[closestObject]->object_type;
+	int previous_obj_type = hitRecord->object_type;
+	hitRecord->object_type = objects[closestObject]->object_type;
   	std::normal_distribution<double> distribution(0, objects[closestObject]->mat->roughness);
 	double rand_x = distribution(theScene->generator);
 	double rand_y = distribution(theScene->generator);
@@ -71,13 +76,13 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 	vec3 hitPoint(hitX, hitY, hitZ);
 	vec3 normal = objects[closestObject]->getNormal(hitX, hitY, hitZ, theScene->flat);
 	normal.normalize();
-	hit_normal.x = normal.x;
-	hit_normal.y = normal.y;
-	hit_normal.z = normal.z;
 	double cosineNE = normal.dot(this->direction);
 	if (cosineNE > 0) {
 		normal.reverse();
 	}
+	hitRecord->hit_normal.x = normal.x;
+	hitRecord->hit_normal.y = normal.y;
+	hitRecord->hit_normal.z = normal.z;
 
 	vec3 objectEmission = objects[closestObject]->getEmission();
 
@@ -93,7 +98,8 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 		double reflect_dir_y = this->direction.y - 2 * (n_dot_i) * normal.y;
 		double reflect_dir_z = this->direction.z - 2 * (n_dot_i) * normal.z;
 		ray *reflect_ray = new ray(hitX + (.0001) * reflect_dir_x, hitY + (.0001) * reflect_dir_y, hitZ + (.0001) * reflect_dir_z, reflect_dir_x, reflect_dir_y, reflect_dir_z);
-		reflect_ray->cast(theScene, imageBuffers, reflection_color, bounces - 1, -1, primary_ray, x, y, primary_objID, hit_normal, object_type, hit_list, shadowed, indirect_bounces);
+		hitRecord->lastObject = -1;
+		reflect_ray->cast(theScene, imageBuffers, hitRecord, reflection_color, bounces - 1, indirect_bounces);
 		delete reflect_ray;
 	}
 	if ((objects[closestObject]->mat->transparency.x > 0 || objects[closestObject]->mat->transparency.y > 0 || objects[closestObject]->mat->transparency.z > 0) && bounces > 0) {
@@ -130,7 +136,10 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 			refract_dir_y = this->direction.y - 2 * (n_dot_i) * normal.y;
 			refract_dir_z = this->direction.z - 2 * (n_dot_i) * normal.z;
 			ray *refract_ray = new ray(hitX, hitY, hitZ, refract_dir_x, refract_dir_y, refract_dir_z);
-			refract_ray->cast(theScene, imageBuffers, refraction_color, bounces - 1, -1, primary_ray, -1, -1, primary_objID, hit_normal, object_type, hit_list, shadowed, indirect_bounces);
+			hitRecord->lastObject = -1;
+			hitRecord->x = -1;
+			hitRecord->y = -1;
+			refract_ray->cast(theScene, imageBuffers, hitRecord, refraction_color, bounces - 1, indirect_bounces);
 			delete refract_ray;
 		}
 		else {
@@ -138,11 +147,14 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 			refract_dir_y = ior * this->direction.y + (ior * n_dot_i - sqrt(k)) * normal.y;
 			refract_dir_z = ior * this->direction.z + (ior * n_dot_i - sqrt(k)) * normal.z;
 			ray *refract_ray = new ray(hitX + (.0001) * refract_dir_x, hitY + (.0001) * refract_dir_y, hitZ + (.0001) * refract_dir_z, refract_dir_x, refract_dir_y, refract_dir_z);
-			refract_ray->cast(theScene, imageBuffers, refraction_color, bounces - 1, closestObject, primary_ray, -1, -1, primary_objID, hit_normal, object_type, hit_list, shadowed, indirect_bounces);
+			hitRecord->lastObject = closestObject;
+			hitRecord->x = -1;
+			hitRecord->y = -1;
+			refract_ray->cast(theScene, imageBuffers, hitRecord, refraction_color, bounces - 1, indirect_bounces);
 			delete refract_ray;
 		}
 	}
-	if (lastObject == closestObject) {
+	if (hitRecord->lastObject == closestObject) {
 		// don't count diffuse color for refraction exit ray of object
 	}
 	else if (theScene->lights.size() > 0) {
@@ -158,10 +170,15 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 				distanceToBlock = light_ray->castLight(objects, theScene->lights[i], distanceToLight);
 				delete light_ray;
 				if (distanceToBlock < distanceToLight) {
-					diffuse_color[0] += 0;
-					diffuse_color[1] += 0;
-					diffuse_color[2] += 0;
-					continue;
+					if (objects[closestObject]->object_type == 1) {
+						diffuse_color[0] += 0;
+						diffuse_color[1] += 0;
+						diffuse_color[2] += 0;
+						continue;
+					}
+					else {
+						hitRecord->shadowed = 1;
+					}
 				}
 				if (objects[closestObject]->mat->roughness > 0) {
 					normal.x += rand_x;
@@ -169,6 +186,7 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 					normal.z += rand_z;
 					normal.normalize();
 				}
+				// hitRecord->setAttributes(distance, hitPoint, normal);
 				double cosineNL = normal.x * theScene->lights[i]->x + normal.y * theScene->lights[i]->y + normal.z * theScene->lights[i]->z;
 				if (cosineNL > 0) {
 					vec3 texCoords = objects[closestObject]->getTextureCoordinates(hitPoint);
@@ -234,7 +252,7 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 						continue;
 					}
 					else {
-						shadowed = 1;
+						hitRecord->shadowed = 1;
 					}
 					//continue;
 				}
@@ -244,6 +262,7 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 					normal.z += rand_z;
 					normal.normalize();
 				}
+				// hitRecord->setAttributes(distance, hitPoint, normal);
 				double cosineNL = normal.x * directionToLight.x + normal.y * directionToLight.y + normal.z * directionToLight.z;
 				if (objects[closestObject]->object_type == 1) {
 					if (std::abs(cosineNL * theScene->lights[i]->c[0]) < 0.0000000001) {
@@ -296,7 +315,7 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 						direct_diffuse_color[0] += objectColor.x + 0.5;
 						direct_diffuse_color[1] += objectColor.y + 0.5;
 						direct_diffuse_color[2] += objectColor.z + 0.5;
-						object_type = previous_obj_type;
+						hitRecord->object_type = previous_obj_type;
 					}
 				}
 				
@@ -349,6 +368,7 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 					if (cosineNE > 0) {
 						normal.reverse();
 					}
+					// hitRecord->setAttributes(distance, hitPoint, normal);
 					double cosineNL = normal.x * directionToLight.x + normal.y * directionToLight.y + normal.z * directionToLight.z;
 					if (cosineNL > 0) {
 						vec3 texCoords = objects[closestObject]->getTextureCoordinates(hitPoint);
@@ -362,7 +382,7 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 				direct_diffuse_color[1] /= theScene->light_samples;
 				direct_diffuse_color[2] /= theScene->light_samples;
 				if ((double)num_shadow_rays / (double)theScene->light_samples > 0.6) {
-					shadowed = 1;
+					hitRecord->shadowed = 1;
 				}
 
 				
@@ -372,9 +392,9 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 	if (indirect_bounces > 0) {
 		std::vector<int> indirect_hit_list;
 		for (int s = 0; s < theScene->indirect_samples; s++) {
-			double hitX = this->origin.x + distance * this->direction.x;
-			double hitY = this->origin.y + distance * this->direction.y;
-			double hitZ = this->origin.z + distance * this->direction.z;
+			double hitX = this->origin.x + hitRecord->distance * this->direction.x;
+			double hitY = this->origin.y + hitRecord->distance * this->direction.y;
+			double hitZ = this->origin.z + hitRecord->distance * this->direction.z;
 			vec3 normal = objects[closestObject]->getNormal(hitX, hitY, hitZ, theScene->flat);
 			normal.normalize();
 
@@ -390,19 +410,23 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, double color[4], int
 			if (cosineNE > 0) {
 				normal.reverse();
 			}
-			int indirect_object_type = 0;
-			vec3 indirect_hit_normal(0,0,0);
-			int indirect_shadowed = 0;
-			int indirect_objID = 0;
-			double indirect_depth[1];
-			
-			indirect_diffuse_ray->cast(theScene, imageBuffers, indirect_sample_color, bounces, -1, 0, x, y, indirect_objID, indirect_hit_normal, indirect_object_type, indirect_hit_list, indirect_shadowed, indirect_bounces - 1);
+			// int indirect_object_type = 0;
+			// vec3 indirect_hit_normal(0,0,0);
+			// int indirect_shadowed = 0;
+			// int indirect_objID = 0;
+			// double indirect_depth[1];
+			HitRecord *indirectHitRecord = new HitRecord(hitRecord->x, hitRecord->y);
+			indirectHitRecord->primary_ray = 0;
+			indirectHitRecord->primary_objID = 0;
+			// indirect_diffuse_ray->cast(theScene, imageBuffers, indirect_sample_color, bounces, -1, 0, x, y, indirect_objID, indirect_hit_normal, indirect_object_type, indirect_hit_list, indirect_shadowed, indirect_bounces - 1);
+			indirect_diffuse_ray->cast(theScene, imageBuffers, indirectHitRecord, indirect_sample_color, bounces, indirect_bounces - 1);
 			double cosineNL = normal.x * new_dir.x + normal.y * new_dir.y + normal.z * new_dir.z;
 			cosineNL = std::abs(cosineNL);
 			indirect_diffuse_color[0] += indirect_sample_color[0] * cosineNL * 2 * PI;
 			indirect_diffuse_color[1] += indirect_sample_color[1] * cosineNL * 2 * PI;
 			indirect_diffuse_color[2] += indirect_sample_color[2] * cosineNL * 2 * PI;
 			delete indirect_diffuse_ray;
+			delete indirectHitRecord;
 		}
 		indirect_diffuse_color[0] /= theScene->indirect_samples;
 		indirect_diffuse_color[1] /= theScene->indirect_samples;

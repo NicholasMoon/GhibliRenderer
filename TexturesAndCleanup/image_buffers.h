@@ -24,6 +24,7 @@ class ImageBuffers {
   int *objectBoundaryMap;
   int *objectIDMap;
   int *shadowMap;
+  int *environmentMap;
   float *paintMap; // paint density values
  private:
   
