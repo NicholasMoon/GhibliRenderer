@@ -76,61 +76,23 @@ int main(int argc, char** argv) {
 
 	ImageBuffers *imageBuffers = new ImageBuffers(theScene->dimension);
 	
-	// std::vector<std::shared_ptr<PaintParticle>> paint_particles;
-    	ray *primary_ray;
+    ray *primary_ray;
 	ray *light_dx_ray, *light_dy_ray;
 	stroke *paint_stroke;
-	// brush *paint_brush;
-	// brush *const_brush_small, *const_brush_medium, *const_brush_large;
 
 	// Initialize stroke lengths (do this based on image resolution)
     int small_size = 1;
     int medium_size = 10;
     int large_size = 20;
     int strokeLengths[3] = {small_size, medium_size, large_size};
-
-    // // Initialize brush set
-    // const_brush_small = new brush(1, 2);
-    // const_brush_small->create_mask();
-
-    // const_brush_medium = new brush(4, 2);
-    // const_brush_medium->create_mask();
-
-    // const_brush_large = new brush(10, 2);
-    // const_brush_large->create_mask();
-
-    // brush *brushSet[3] = {const_brush_small, const_brush_medium, const_brush_large};
 	
 	std::uniform_real_distribution<double> distribution(-0.5, 0.5);
 	std::default_random_engine generator2;
 	generator2.seed(time(NULL));
 
-	// // Randomize pixels
-	// std::vector<int> x_values;
-    // std::vector<int> y_values;
-
-    // for (int i=0; i < theScene->width; i++) {
-    //     x_values.push_back(i);
-    // }
-    // for (int j=0; j < theScene->height; j++) {
-    //     y_values.push_back(j);
-    // }
-    // auto rng = std::default_random_engine {};
-    // std::shuffle(x_values.begin(), x_values.end(), rng);
-    // std::shuffle(y_values.begin(), y_values.end(), rng);
-    // std::vector<std::tuple<int, int>> pixels;
-    // for (int x : x_values) {
-    //     for (int y : y_values) {
-    //         pixels.push_back(std::make_tuple (x, y));
-    //     }
-    // }
-    // std::shuffle(pixels.begin(), pixels.end(), rng);
 	int pixnum = 0;
 	for (int yi=0; yi < theScene->height; yi++) {
 		for (int xi=0; xi < theScene->width; xi++) {
-	// for (std::tuple<int, int> curr_pixel : pixels) {
-    //     int xi = std::get<0>(curr_pixel);
-    //     int yi = std::get<1>(curr_pixel);
 			pixnum++;
 			milestone = printProgress(pixnum, theScene->dimension, milestone, start);
 			resultColor[0] = 0;
