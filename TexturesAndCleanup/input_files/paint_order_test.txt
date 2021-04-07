@@ -9,8 +9,9 @@ stencil_rings 1
 environment 1 1 1 0
 
 objectID 0
-object_type 0
+object_type 1
 color 1 0 1
+shininess 0.8
 
 g default
 v 0.040850 -0.051472 -1.013273
@@ -3182,7 +3183,9 @@ vn 0.169981 0.985443 -0.003123
 vn -0.000000 -1.000000 0.000000
 vn -0.000000 1.000000 -0.000000
 objectID 1
+object_type 0
 color 1 0 0
+shininess 0
 g pSphere4
 f 383/440/383 384/441/384 403/461/385
 f 403/461/385 384/441/384 404/462/386

@@ -1,4 +1,4 @@
-png 400 225 landscape.png
+png 400 225 landscape2.png
 color 2 2 2 
 sun -4 2 1
 eye -4 1.6 5.5

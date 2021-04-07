@@ -162,10 +162,12 @@ int main(int argc, char** argv) {
 					direction = cameraDirection(xi, yi, theScene);
 				}
 				primary_ray = new ray(theScene->eye.x, theScene->eye.y, theScene->eye.z, direction.x, direction.y, direction.z);
-				int primary_objID = -1;
-				int objectType = 0;
-				std::vector<int> hit_list;
-				int shadowed = 0;
+				// int primary_objID = -1;
+				// int objectType = 0;
+				// std::vector<int> hit_list;
+				// int shadowed = 0;
+				HitRecord *hitRecord = new HitRecord(xi, yi);
+				hitRecord->primary_ray = 1;
 				resultColor[0] = 0;
 				resultColor[1] = 0;
 				resultColor[2] = 0;
@@ -173,25 +175,26 @@ int main(int argc, char** argv) {
 				int index = yi * theScene->width + xi;
 				int starting_bounces = theScene->bounces;
 				int starting_indirect_bounces = theScene->indirect_bounces;
-				if (primary_ray->cast(theScene, imageBuffers, resultColor, starting_bounces, -1, 1, xi, yi, primary_objID, hit_normal, objectType, hit_list, shadowed, starting_indirect_bounces)) {
-					if (shadowed) {
+				// if (primary_ray->cast(theScene, imageBuffers, resultColor, starting_bounces, -1, 1, xi, yi, primary_objID, hit_normal, objectType, hit_list, shadowed, starting_indirect_bounces)) {
+				if (primary_ray->cast(theScene, imageBuffers, hitRecord, resultColor, starting_bounces, starting_indirect_bounces)) {
+					if (hitRecord->shadowed) {
 						imageBuffers->shadowMap[index] = 1;
 					}
-					if (objectType == 1) {
+					if (hitRecord->object_type == 1) {
 						foreground_samples++;
 					}
 					else {
 						background_samples++;
 					}
-					imageBuffers->objectTypeMap[index] = objectType;
-					imageBuffers->objectBoundaryMap[index] = hit_list.front();
-					imageBuffers->objectIDMap[index] = primary_objID;
+					imageBuffers->objectTypeMap[index] = hitRecord->object_type;
+					imageBuffers->objectBoundaryMap[index] = hitRecord->hit_list.front();
+					imageBuffers->objectIDMap[index] = hitRecord->primary_objID;
 					std::uniform_real_distribution<double> distributionTheta(0, 360);
 					int edge_rays = 0;
 					double step_size = theScene->stencil_radius / theScene->stencil_rings;
 					double radius = 0;
 					int test_num = 0;
-					if (objectType == 1) {
+					if (hitRecord->object_type == 1) {
 						for (double ring_radius = theScene->stencil_radius; ring_radius > 0; ring_radius -= theScene->stencil_rings) {
 							for (test_num = 0; test_num < theScene->stencil_ring_samples; test_num++) {
 								int edgeObjectType = 0;
@@ -209,22 +212,22 @@ int main(int argc, char** argv) {
 								primary_ray->direction.x = direction.x;
 								primary_ray->direction.y = direction.y;
 								primary_ray->direction.z = direction.z;
-								if (hit_list.size() == 0 && edge_hit_list.size() > 0) {
+								if (hitRecord->hit_list.size() == 0 && edge_hit_list.size() > 0) {
 									edge_rays++;
 								}
-								else if  (hit_list.size() == 0 && edge_hit_list.size() == 0) {
+								else if  (hitRecord->hit_list.size() == 0 && edge_hit_list.size() == 0) {
 									continue;
 								}
-								else if  (hit_list.size() > 0 && edge_hit_list.size() == 0) {
+								else if  (hitRecord->hit_list.size() > 0 && edge_hit_list.size() == 0) {
 									edge_rays++;
 								}
-								else if (edge_hit_list[0] != hit_list[0] && edge_hit_list.size() != hit_list.size()) {
+								else if (edge_hit_list[0] != hitRecord->hit_list[0] && edge_hit_list.size() != hitRecord->hit_list.size()) {
 									edge_rays++;
 								}
-								else if (edgeObjectType == 0 && objectType == 0) {
+								else if (edgeObjectType == 0 && hitRecord->object_type == 0) {
 									continue;
 								}
-								else if (stencil_objID != primary_objID) {
+								else if (stencil_objID != hitRecord->primary_objID) {
 									edge_rays++;
 								}
 								else if (std::abs(edge_test - imageBuffers->depthMap[index]) > theScene->outline_cutoff) {
@@ -238,7 +241,7 @@ int main(int argc, char** argv) {
 					imageBuffers->edgeMap[(yi + theScene->height) * theScene->width + xi] = 1 - edge_strength;
 					imageBuffers->edgeMap[(yi + 2*theScene->height) * theScene->width + xi] = 1 - edge_strength;
 
-					if (objectType == 0) {
+					if (hitRecord->object_type == 0) {
 						vec3 particle_color(resultColor[0], resultColor[1], resultColor[2]);
 
 						// Get drawing gradient
@@ -248,8 +251,6 @@ int main(int argc, char** argv) {
 						light_dy_up.x = theScene->up.x * 0.001;
 						light_dy_up.y = theScene->up.y * 0.001;
 						light_dy_up.z = theScene->up.z * 0.001;
-						// vec3 light_dx_dir = cameraDirection(xi, yi, width, height, forward, light_dx_right, up); // adjust right vector
-						// vec3 light_dy_dir = cameraDirection(xi, yi, width, height, forward, right, light_dy_up); // adjust up vector
 						light_dx_ray = new ray(theScene->eye.x, theScene->eye.y, theScene->eye.z, direction.x + light_dx_right.x, direction.y + light_dx_right.y, direction.z + light_dx_right.z);
 						light_dy_ray = new ray(theScene->eye.x, theScene->eye.y, theScene->eye.z, direction.x + light_dy_up.x, direction.y + light_dy_up.y, direction.z + light_dy_up.z);
 
@@ -257,30 +258,31 @@ int main(int argc, char** argv) {
 						int light_objID = -1;
 						std::vector<int> light_hit_list;
 						vec3 light_hit_normal(0,0,0);
-						light_dx_ray->cast(theScene, imageBuffers, lightDxColor, starting_bounces, -1, 1, xi, yi, light_objID, light_hit_normal, lightObjectType, light_hit_list, shadowed, starting_indirect_bounces);
-						light_dy_ray->cast(theScene, imageBuffers, lightDyColor, starting_bounces, -1, 1, xi, yi, light_objID, light_hit_normal, lightObjectType, light_hit_list, shadowed, starting_indirect_bounces);
+						HitRecord *lightHitRecord = new HitRecord(xi, yi);
+						lightHitRecord->primary_ray = 1;
+						// light_dx_ray->cast(theScene, imageBuffers, lightDxColor, starting_bounces, -1, 1, xi, yi, light_objID, light_hit_normal, lightObjectType, light_hit_list, shadowed, starting_indirect_bounces);
+						// light_dy_ray->cast(theScene, imageBuffers, lightDyColor, starting_bounces, -1, 1, xi, yi, light_objID, light_hit_normal, lightObjectType, light_hit_list, shadowed, starting_indirect_bounces);
+						light_dx_ray->cast(theScene, imageBuffers, lightHitRecord, lightDxColor, starting_bounces, starting_indirect_bounces);
+						light_dy_ray->cast(theScene, imageBuffers, lightHitRecord, lightDyColor, starting_bounces, starting_indirect_bounces);
 
 						delete light_dx_ray;
 						delete light_dy_ray;
+						// delete lightHitRecord;
 
-						getDrawingGradient(hit_normal, resultColor, lightDxColor, lightDyColor, stroke_gradient, pixnum);
-						double cosTheta = hit_normal.dot(primary_ray->direction);
+						getDrawingGradient(hitRecord->hit_normal, resultColor, lightDxColor, lightDyColor, stroke_gradient, pixnum);
+						double cosTheta = hitRecord->hit_normal.dot(primary_ray->direction);
 						bool inside = false;
 						if (cosTheta > 0) inside = true;
 						
 						// Make new stroke
-						paint_stroke = new stroke(xi, yi, particle_color, primary_ray->direction, hit_normal, imageBuffers->depthMap[index], hit_list.front(), primary_objID);
+						// paint_stroke = new stroke(xi, yi, particle_color, primary_ray->direction, hit_normal, imageBuffers->depthMap[index], hit_list.front(), primary_objID);
+						paint_stroke = new stroke(xi, yi, particle_color, primary_ray->direction, hitRecord);
 						// Set these based on position and distance from camera
 						paint_stroke->set_length(strokeLengths[1]);
 						paint_stroke->set_curvature(0.8);
 						paint_stroke->create(stroke_gradient, inside, 0, 0, myImage.width(), myImage.height());
 
 						bottomLayer.push_back(paint_stroke);
-						
-						// // Choose brush and paint
-						// paint_brush = brushSet[1];
-						// paint_brush->paint(paint_stroke, imageBuffers, &myImage);
-						// delete paint_stroke;
 					} 
 				}
 				else {
@@ -293,8 +295,9 @@ int main(int argc, char** argv) {
 				AAColor[2] += resultColor[2];
 				AAColor[3] += resultColor[3];
 				delete primary_ray;
+				delete hitRecord;
 			}
-			if (foreground_samples > background_samples || theScene->environment || imageBuffers->environmentMap[yi * theScene->width + xi]) {
+			if (foreground_samples > background_samples || imageBuffers->environmentMap[yi * theScene->width + xi]) {
 				myImage(xi, yi, 0, 0) = clip((AAColor[0] / (double) theScene->spp) * 255);
 				myImage(xi, yi, 0, 1) = clip((AAColor[1] / (double) theScene->spp) * 255);
 				myImage(xi, yi, 0, 2) = clip((AAColor[2] / (double) theScene->spp) * 255);

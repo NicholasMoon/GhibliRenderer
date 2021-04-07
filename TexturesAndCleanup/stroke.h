@@ -6,7 +6,8 @@
 
 class stroke {
 public:
-    stroke(double x_0, double y_0, vec3 col, vec3 dir, vec3 norm, double dep, int primary_obj_bound, int curr_obj_id);
+    // stroke(double x_0, double y_0, vec3 col, vec3 dir, vec3 norm, double dep, int primary_obj_bound, int curr_obj_id);
+    stroke(double x_0, double y_0, vec3 col, vec3 dir, HitRecord *hit_record);
     void create(vec3 gradient, bool inside, double min_x, double min_y, double max_x, double max_y);
     void set_length(int length);
     void set_curvature(double curvature);

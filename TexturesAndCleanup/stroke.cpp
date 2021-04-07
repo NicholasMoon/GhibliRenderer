@@ -1,14 +1,25 @@
 #include "stroke.h"
 
-stroke::stroke(double x_0, double y_0, vec3 col, vec3 dir, vec3 norm, double dep, int primary_obj_bound, int curr_obj_id) {
+// stroke::stroke(double x_0, double y_0, vec3 col, vec3 dir, vec3 norm, double dep, int primary_obj_bound, int curr_obj_id) {
+//     this->x0 = x_0;
+//     this->y0 = y_0;
+//     this->color = col;
+//     this->direction = dir;
+//     this->normal = norm;
+//     this->depth = dep;
+//     this->primaryObjectBoundary = primary_obj_bound;
+//     this->currObjectID = curr_obj_id; 
+// }
+
+stroke::stroke(double x_0, double y_0, vec3 col, vec3 dir, HitRecord *hit_record) {
     this->x0 = x_0;
     this->y0 = y_0;
     this->color = col;
     this->direction = dir;
-    this->normal = norm;
-    this->depth = dep;
-    this->primaryObjectBoundary = primary_obj_bound;
-    this->currObjectID = curr_obj_id; 
+    this->normal = hit_record->hit_normal;
+    this->depth = hit_record->distance;
+    this->primaryObjectBoundary = hit_record->hit_list.front();
+    this->currObjectID = hit_record->primary_objID; 
 }
 
 void stroke::create(vec3 gradient, bool inside, double min_x, double min_y, double max_x, double max_y) {

@@ -12,16 +12,27 @@
 #include <limits>
 #include <random>
 
+class object;
+class vec3;
+class ray;
 #include "vec3.h"
+#include "ray.h"
 #include "object.h"
-#include "light.h"
+#include "scene.h"
 
 class HitRecord {
  public:
-  HitRecord(char** inputFile);
+  HitRecord(int x, int y);
+  void setAttributes(double distance, vec3 &hit_point, vec3 &hit_normal);
   ~HitRecord();
 
-  double color[4];
+  vec3 hit_point, hit_normal;
+  double distance;
+  int primary_ray;
+  int x, y;
+  int lastObject, primary_objID, object_type;
+  int shadowed;
+  std::vector<int> hit_list;
  private:
   
 };
