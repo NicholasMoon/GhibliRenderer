@@ -4,6 +4,7 @@
 
 HitRecord::HitRecord(int x, int y) {
     this->hit_point = vec3(0,0,0);
+    this->primary_hit_normal = vec3(0,0,0);
     this->hit_normal = vec3(0,0,0);
     this->distance = 0.0;
     this->primary_ray = -1;
@@ -18,7 +19,8 @@ HitRecord::HitRecord(int x, int y) {
 void HitRecord::setAttributes(double distance, vec3 &hit_point, vec3 &hit_normal) {
     this->distance = distance;
     this->hit_point = hit_point;
-    this->hit_normal = hit_normal;
+    this->primary_hit_normal = hit_normal;
+    // this->hit_normal = hit_normal;
 }
 
 HitRecord::~HitRecord() {

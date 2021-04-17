@@ -169,6 +169,7 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, HitRecord *hitRecord
 					normal.z += rand_z;
 					normal.normalize();
 				}
+				// hitRecord->setAttributes(distance, hitPoint, normal);
 				double cosineNL = normal.x * theScene->lights[i]->x + normal.y * theScene->lights[i]->y + normal.z * theScene->lights[i]->z;
 				if (cosineNL > 0) {
 					vec3 texCoords = objects[closestObject]->getTextureCoordinates(hitPoint);
@@ -222,6 +223,7 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, HitRecord *hitRecord
 					normal.z += rand_z;
 					normal.normalize();
 				}
+				// hitRecord->setAttributes(distance, hitPoint, normal);
 				double cosineNL = normal.x * directionToLight.x + normal.y * directionToLight.y + normal.z * directionToLight.z;
 				double dtl_squared = distanceToLight * distanceToLight;
 				direct_diffuse_color[0] += (objectColor.x * theScene->lights[i]->c[0] * cosineNL) / (dtl_squared);
@@ -296,6 +298,7 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, HitRecord *hitRecord
 					if (cosineNE > 0) {
 						normal.reverse();
 					}
+					// hitRecord->setAttributes(distance, hitPoint, normal);
 					double cosineNL = normal.x * directionToLight.x + normal.y * directionToLight.y + normal.z * directionToLight.z;
 					if (cosineNL > 0) {
 						vec3 texCoords = objects[closestObject]->getTextureCoordinates(hitPoint);
