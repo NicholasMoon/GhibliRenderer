@@ -173,7 +173,7 @@ bool ray::cast(Scene *theScene, ImageBuffers *imageBuffers, HitRecord *hitRecord
 				if (cosineNL > 0) {
 					vec3 texCoords = objects[closestObject]->getTextureCoordinates(hitPoint);
 					vec3 objectColor = objects[closestObject]->getColor(texCoords.x, texCoords.y, hitPoint);
-					std::cout << cosineNL << std::endl;
+					// std::cout << cosineNL << std::endl;
 					direct_diffuse_color[0] += objectColor.x * theScene->lights[i]->c[0] * cosineNL;
 					direct_diffuse_color[1] += objectColor.y * theScene->lights[i]->c[1] * cosineNL;
 					direct_diffuse_color[2] += objectColor.z * theScene->lights[i]->c[2] * cosineNL;

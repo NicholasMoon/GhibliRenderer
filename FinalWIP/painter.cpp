@@ -40,7 +40,7 @@ void painter::paint(ImageBuffers *imageBuffers, CImg<float> *img) {
     for (int i=0; i < 3; i++) {
         if (i == 0) {
             current_layer = this->bottomLayer; 
-            current_brush = this->brushes[0];
+            current_brush = this->brushes[1];
         }
         else if (i == 1) {
             current_layer = this->middleLayer; 
