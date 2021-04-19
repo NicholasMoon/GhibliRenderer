@@ -28,7 +28,7 @@ double Min_Double(double a, double b, double c);
 double clip(double color);
 double maxItoD(int x, int y);
 vec3 cameraDirection(double xi, double yi, Scene *theScene);
-void getDrawingGradient(vec3 hit_normal, double *old_color, double *light_x_color, double *light_y_color, vec3 &final_gradient, int pixnum);
+void getDrawingGradient(vec3 hit_normal, vec3 primary_hit_normal, double *old_color, double *light_x_color, double *light_y_color, vec3 &final_gradient, int pixnum);
 
 
 #endif

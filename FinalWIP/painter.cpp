@@ -34,21 +34,39 @@ void painter::paint_layer(std::vector<stroke *> layer, brush *brush, ImageBuffer
     
 }
 
+
+brush *painter::choose_brush() {
+    int resolution = this->canvasWidth * this->canvasHeight;
+    int brush_index = 0;
+    if (resolution < 1e5) {
+        brush_index = 2; // use small brush
+    }
+    else if (resolution >= 1e5 && resolution < 5e5) {
+        brush_index = 1;; // use medium brush
+    }
+    else if (resolution >= 5e5) {
+        brush_index = 0; // use large brush
+    }
+
+    return this->brushes[brush_index];
+}
+
+
 void painter::paint(ImageBuffers *imageBuffers, CImg<float> *img) {
     std::vector<stroke *> current_layer;
-    brush *current_brush;
+    brush *current_brush = this->choose_brush();
     for (int i=0; i < 3; i++) {
         if (i == 0) {
             current_layer = this->bottomLayer; 
-            current_brush = this->brushes[1];
+            // current_brush = this->brushes[1];
         }
         else if (i == 1) {
             current_layer = this->middleLayer; 
-            current_brush = this->brushes[1];
+            // current_brush = this->brushes[1];
         }
         else if (i == 2) {
             current_layer = this->topLayer; 
-            current_brush = this->brushes[2];
+            // current_brush = this->brushes[2];
         }
         paint_layer(current_layer, current_brush, imageBuffers, img);
     }  
