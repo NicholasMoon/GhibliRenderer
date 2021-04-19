@@ -77,15 +77,21 @@ int main(int argc, char** argv) {
 
 	ImageBuffers *imageBuffers = new ImageBuffers(theScene->dimension);
 	
-    	ray *primary_ray;
+    ray *primary_ray;
 	ray *light_dx_ray, *light_dy_ray;
 	stroke *paint_stroke;
 
 	// Initialize stroke lengths (do this based on image resolution)
-	int small_size = 1;
-	int medium_size = 10;
-	int large_size = 20;
-	int strokeLengths[3] = {small_size, medium_size, large_size};
+	float resolution = theScene->width * theScene->height;
+    int stroke_length = 10;
+    if (resolution >= 5e5) {
+        stroke_length = 20;
+    }
+
+	// int small_size = 1;
+	// int medium_size = 10;
+	// int large_size = 20;
+	// int strokeLengths[3] = {small_size, medium_size, large_size};
 	
 	std::uniform_real_distribution<double> distribution(-0.5, 0.5);
 	std::default_random_engine generator2;
@@ -157,7 +163,7 @@ int main(int argc, char** argv) {
 					double step_size = theScene->stencil_radius / theScene->stencil_rings;
 					//double radius = 0;
 					int test_num = 0;
-					//if (objectType == 1) {
+					if (hitRecord->object_type == 1) {
 						for (double ring_radius = theScene->stencil_radius; ring_radius > 0.01; ring_radius -= step_size) {
 							for (test_num = 0; test_num < theScene->stencil_ring_samples; test_num++) {
 								//continue;
@@ -200,7 +206,7 @@ int main(int argc, char** argv) {
 								}*/
 							}
 						}
-					//}
+					}
 					double edge_strength = 1 - pow((std::abs(edge_rays - 0.5 * theScene->stencil_rings * theScene->stencil_ring_samples) / (0.5 * theScene->stencil_rings * theScene->stencil_ring_samples)),2);
 					imageBuffers->edgeMap[index] = 1 - edge_strength;
 					imageBuffers->edgeMap[(yi + theScene->height) * theScene->width + xi] = 1 - edge_strength;
@@ -236,7 +242,7 @@ int main(int argc, char** argv) {
 						delete light_dx_ray;
 						delete light_dy_ray;
 
-						getDrawingGradient(hitRecord->hit_normal, resultColor, lightDxColor, lightDyColor, stroke_gradient, pixnum);
+						getDrawingGradient(hitRecord->hit_normal, hitRecord->primary_hit_normal,resultColor, lightDxColor, lightDyColor, stroke_gradient, pixnum);
 						double cosTheta = hitRecord->hit_normal.dot(primary_ray->direction);
 						bool inside = false;
 						if (cosTheta > 0) inside = true;
@@ -245,7 +251,7 @@ int main(int argc, char** argv) {
 						//paint_stroke = new stroke(xi, yi, particle_color, primary_ray->direction, hit_normal, imageBuffers->depthMap[index]);
 						paint_stroke = new stroke(xi, yi, particle_color, primary_ray->direction, hitRecord);
 						// Set these based on position and distance from camera
-						paint_stroke->set_length(strokeLengths[1]);
+						paint_stroke->set_length(stroke_length);
 						paint_stroke->set_curvature(0.8);
 						paint_stroke->create(stroke_gradient, inside, 0, 0, myImage.width(), myImage.height());
 

@@ -26,7 +26,7 @@ class HitRecord {
   void setAttributes(double distance, vec3 &hit_point, vec3 &hit_normal);
   ~HitRecord();
 
-  vec3 hit_point, hit_normal;
+  vec3 hit_point, primary_hit_normal, hit_normal;
   double distance;
   int primary_ray;
   int x, y;

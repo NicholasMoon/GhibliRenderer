@@ -113,13 +113,18 @@ vec3 cameraDirection(double xi, double yi, Scene *theScene) {
 	return camera_direction;
 }
 
-void getDrawingGradient(vec3 hit_normal, double *old_color, double *light_x_color, double *light_y_color, vec3 &final_gradient, int pixnum) {
+void getDrawingGradient(vec3 hit_normal, vec3 primary_hit_normal, double *old_color, double *light_x_color, double *light_y_color, vec3 &final_gradient, int pixnum) {
     // See which is stronger - edge or light gradient and draw strokes perpendicular to this
 
     // Edge gradient
-    double ex = hit_normal.x;
-    double ey = hit_normal.y;
+    double ex = primary_hit_normal.x;
+    double ey = primary_hit_normal.y;
     vec3 edge_gradient(ex, ey, 0);
+
+	// Seconary edge gradient
+	double rx = hit_normal.x;
+	double ry = hit_normal.y;
+	vec3 secondary_edge_gradient(rx, ry, 0);
 
     // Light gradient 
     double old_light_total = old_color[0] + old_color[1] + old_color[2];
@@ -130,10 +135,12 @@ void getDrawingGradient(vec3 hit_normal, double *old_color, double *light_x_colo
 
     // Weighting
     double edge = edge_gradient.magnitude();
+	double sec_edge = secondary_edge_gradient.magnitude();
     double light = std::min(2.0 * light_gradient.magnitude(), pow(1 - edge, 2));
 
     // See if either vector is 0 length
     if (edge_gradient.magnitude() != 0) edge_gradient.normalize();
+	if (secondary_edge_gradient.magnitude() != 0) secondary_edge_gradient.normalize();
     if (light_gradient.magnitude() != 0) light_gradient.normalize();
 
     // final_gradient = (edge_gradient * edge + light_gradient * light).normalize();
@@ -142,6 +149,6 @@ void getDrawingGradient(vec3 hit_normal, double *old_color, double *light_x_colo
     //     final_gradient = edge_gradient;
     // }
     // else {
-    //     final_gradient = light_gradient;
+    //     final_gradient = secondary_edge_gradient;
     // }
 }
