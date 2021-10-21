@@ -1,1 +1,5 @@
 # GhibliRenderer
+
+Code developed for UVA CS Research Capstone and presented at ACM SIGGRAPH 2021 Conference as a poster: https://dl.acm.org/doi/10.1145/3450618.3469173
+
+We present a modification to traditional ray tracing that stylistically renders a scene with cartoon and painterly styles. Previous methods rely on post-processing, materials, or textures to achieve a non-photorealistic look. Our method uses a ray tracer to combine cel animation art styles with complex lighting effects, such as reflections, refractions, and global illumination. The ray tracer collects information about objects and their properties to dynamically switch between cartoon and painterly rendering styles. The renderer generates the styles by shooting additional rays for each pixel and collecting information such as normals, distance, slope, object identifiers, and light gradients from neighboring areas of the image. The resulting algorithm produces images with visual and artistic characteristics that allow artists to take advantage of rendering techniques that are not commonly supported in production ray tracers.
